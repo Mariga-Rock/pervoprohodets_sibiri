@@ -7,7 +7,7 @@
     <title>Первопроходец Сибири</title>
 
     <!-- Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/static/js/telegram-web-app.js"></script>
 
     <style>
         /* ============================================
@@ -267,8 +267,10 @@
         <span class="stat" id="stat-vit-c">🍋 100</span>
         <span class="stat" id="stat-morale">🔥 100</span>
         <span class="stat" id="stat-squad">👥 10</span>
+        <span class="stat" id="stat-wood">🪵 0</span>
+        <span class="stat" id="stat-herbs">🌿 0</span>
+        <span class="stat" id="stat-salt">🧂 0</span>
     </div>
-
     <div id="content">
         <div id="title"></div>
         <div id="text"></div>
@@ -376,22 +378,26 @@ function finishTyping() {
 // UI
 // ============================================================
 function setStats(run) {
-    document.getElementById('stat-day').textContent = `📅 День ${run.day}`;
-    document.getElementById('stat-distance').textContent = `🛤 ${run.distance_covered} вёрст`;
+    setStat('stat-day',      `📅 День ${run.day}`,                false);
+    setStat('stat-distance', `🛤 ${run.distance_covered} вёрст`,  false);
+    setStat('stat-calories', `🍖 ${run.calories}`,  run.calories < 30);
+    setStat('stat-vit-c',    `🍋 ${run.vit_c}`,     run.vit_c    < 30);
+    setStat('stat-morale',   `🔥 ${run.morale}`,    run.morale   < 20);
+    setStat('stat-squad',    `👥 ${run.squad_size}`, run.squad_size < 3);
+    setStat('stat-wood',     `🪵 ${run.inventory?.wood  || 0}`, false);
+    setStat('stat-herbs',    `🌿 ${run.inventory?.herbs || 0}`, false);
+    setStat('stat-salt',     `🧂 ${run.inventory?.salt  || 0}`, false);
+}
 
-    const cal = document.getElementById('stat-calories');
-    cal.textContent = `🍖 ${run.calories}`;
-    cal.classList.toggle('critical', run.calories < 30);
-
-    const vit = document.getElementById('stat-vit-c');
-    vit.textContent = `🍋 ${run.vit_c}`;
-    vit.classList.toggle('critical', run.vit_c < 30);
-
-    const mor = document.getElementById('stat-morale');
-    mor.textContent = `🔥 ${run.morale}`;
-    mor.classList.toggle('critical', run.morale < 20);
-
-    document.getElementById('stat-squad').textContent = `👥 ${run.squad_size}`;
+function setStat(id, value, critical) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = value;
+    if (critical) {
+        el.classList.add('critical');
+    } else {
+        el.classList.remove('critical');
+    }
 }
 
 function setContent(title, text, useTypewriter = true) {
@@ -503,11 +509,16 @@ async function startNewGame() {
     }
 }
 
-function showIdle() {
-    setContent(
-        'Экспедиция',
-        'Вы вышли из Нижнего Чусовского Городка. Ветер в лицо.'
-    );
+function showIdle(run) {
+    // Если это самая первая остановка — показываем вступление.
+    // День 1 и 0 вёрст = игрок ещё не сделал ни одного хода.
+    const isFirstStop = run && run.day === 1 && run.distance_covered === 0;
+
+    const text = isFirstStop
+        ? 'Вы вышли из Нижнего Чусовского Городка. Строгановы дали вам лодки, соль и хлеб. Позади — Кама, впереди — Камень. Ветер бьёт в лицо с реки Чусовой. Пора идти за Урал.'
+        : 'Идём по тайге. Снег скрипит под сапогами. Пора идти дальше.';
+
+    setContent('Экспедиция', text);
     clearActions();
     addButton('Идти дальше', onNextTurn);
 }
