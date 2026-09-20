@@ -20,7 +20,7 @@ EVENTS_PATH = Path(__file__).resolve().parent.parent / "data" / "events.json"
 
 # Какие статы мы умеем обрабатывать.
 # Если JSON содержит что-то другое — ошибка.
-VALID_STAT_KEYS = {"calories", "vit_c", "morale"}
+VALID_STAT_KEYS = {"calories", "vit_c", "morale", "discipline", "squad_size"}
 
 
 def validate():

@@ -37,6 +37,7 @@ def reset(tg_id: int, event_id, vit_c: int):
         run.vit_c = vit_c
         run.morale = 80
         run.warmth = 100
+        run.discipline=70
         run.squad_size = 10
         run.inventory = {"salt": 2, "lancet": 1, "herbs": 3, "wood": 10}
         run.tags = []

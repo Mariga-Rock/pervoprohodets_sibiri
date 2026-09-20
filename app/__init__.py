@@ -148,6 +148,7 @@ def serialize_run(run):
         "vit_c": run.vit_c,
         "morale": run.morale,
         "warmth": run.warmth,
+        "discipline": run.discipline,        # ← НОВОЕ
         "squad_size": run.squad_size,
         "inventory": run.inventory,
         "tags": run.tags,
@@ -473,5 +474,81 @@ def register_routes(app):
             "type": "quiet_day",
             "message": "Вы прошли ещё один день. Ветер стих. "
                        "Ничего не случилось.",
+            "run": serialize_run(run),
+        }), 200
+        # --------------------------------------------------------
+    # /api/get_event
+    # --------------------------------------------------------
+    @app.route("/api/get_event", methods=["POST"])
+    def get_event():
+        """
+        Возвращает данные ивента по event_id.
+
+        Нужен для двух сценариев:
+            1. Chain-ивент: игрок перешёл в следующий ивент, фронтенд
+               запрашивает его текст.
+            2. Восстановление сессии: игрок закрыл Telegram в середине
+               ивента, открыл заново — get_state отдал current_event_id,
+               фронтенд запрашивает текст.
+        """
+        data = request.get_json(silent=True) or {}
+
+        tg_id, err = _extract_tg_id(data)
+        if err:
+            return err
+
+        event_id = data.get("event_id")
+        if not event_id:
+            return jsonify({
+                "status": "error",
+                "message": "event_id обязателен",
+            }), 400
+
+        user = User.query.filter_by(telegram_id=tg_id).first()
+        if not user:
+            return jsonify({
+                "status": "error",
+                "message": "Игрок не найден",
+            }), 404
+        if not user.run:
+            return jsonify({
+                "status": "error",
+                "message": "У игрока нет активной экспедиции",
+            }), 404
+
+        run = user.run
+
+        # Защита: игрок может запросить только тот ивент, в котором он
+        if run.current_event_id != event_id:
+            return jsonify({
+                "status": "error",
+                "message": (
+                    f"Игрок в ивенте '{run.current_event_id}', "
+                    f"а запрошен '{event_id}'"
+                ),
+            }), 400
+
+        from app.events_loader import get_event as load_event
+        event_data = load_event(event_id)
+        if not event_data:
+            return jsonify({
+                "status": "error",
+                "message": f"Ивент '{event_id}' не найден в events.json",
+            }), 404
+
+        choices = []
+        for ch in event_data["choices"]:
+            choices.append({
+                "choice_id": ch["choice_id"],
+                "text": ch["text"],
+                "conditions": ch.get("conditions") or {},
+            })
+
+        return jsonify({
+            "status": "ok",
+            "event_id": event_id,
+            "event_title": event_data.get("title", ""),
+            "event_text": event_data["text"],
+            "choices": choices,
             "run": serialize_run(run),
         }), 200

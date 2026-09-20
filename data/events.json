@@ -2,61 +2,13 @@
   "event_blizzard": {
     "title": "Буран",
     "text": "Снежная стена обрушилась на отряд к полудню. Ветер сбивает с ног, лица режет ледяной крупой. Костёр не разжечь. Сани тонут в снегу по самые борта. Десятник кричит в ухо: «Что делать, атаман?!»",
-    "weight": 50,
+    "weight": 30,
     "is_unique": false,
-    "trigger_conditions": {
-      "min_day": 2
-    },
+    "trigger_conditions": {"min_day": 2},
     "choices": [
-      {
-        "choice_id": "push_through",
-        "text": "Идти напролом",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "calories": -15,
-            "morale": -5
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      },
-      {
-        "choice_id": "wait_it_out",
-        "text": "Переждать в овраге",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "calories": -20,
-            "morale": -10
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      },
-      {
-        "choice_id": "big_fire",
-        "text": "Разжечь большой костёр в укрытии (−1 дрова)",
-        "conditions": {
-          "items_required": {
-            "wood": 1
-          }
-        },
-        "effects": {
-          "stats": {
-            "calories": -10,
-            "morale": 10
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": ["wood"]
-        },
-        "next_event": null
-      }
+      {"choice_id": "push_through", "text": "Идти напролом", "conditions": {}, "effects": {"stats": {"calories": -15, "morale": -5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "wait_it_out", "text": "Переждать в овраге", "conditions": {}, "effects": {"stats": {"calories": -20, "morale": -10}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "big_fire", "text": "Разжечь большой костёр (−1 дрова)", "conditions": {"items_required": {"wood": 1}}, "effects": {"stats": {"calories": -10, "morale": 10}, "tags_add": [], "items_add": {}, "items_remove": ["wood"]}, "next_event": null}
     ]
   },
 
@@ -65,142 +17,243 @@
     "text": "Утром десятник Остап выплюнул зуб на снег. Дёсны у него синие, распухшие, как гнилая свёкла. Вчера он ещё смеялся, а сегодня еле встал с нар. Ещё трое жалуются на слабость. Старые рубцы на плечах, затянувшиеся годы назад, снова начали кровить. Пришла цинга.",
     "weight": 100,
     "is_unique": true,
-    "trigger_conditions": {
-      "max_vit_c": 30,
-      "min_day": 5
-    },
+    "trigger_conditions": {"max_vit_c": 30, "min_day": 5},
     "choices": [
-      {
-        "choice_id": "bloodletting",
-        "text": "Кровопускание (метод Галена)",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "morale": -20
-          },
-          "tags_add": ["bled_for_nothing"],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      },
-      {
-        "choice_id": "pine_brew",
-        "text": "Встать лагерем и варить хвойный отвар",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "calories": -15,
-            "vit_c": 25,
-            "morale": 5
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      },
-      {
-        "choice_id": "cheremsha",
-        "text": "Истолочь черемшу и дать жевать (−1 травы)",
-        "conditions": {
-          "items_required": {
-            "herbs": 1
-          }
-        },
-        "effects": {
-          "stats": {
-            "vit_c": 40
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": ["herbs"]
-        },
-        "next_event": null
-      }
+      {"choice_id": "bloodletting", "text": "Кровопускание (метод Галена)", "conditions": {}, "effects": {"stats": {"morale": -20}, "tags_add": ["bled_for_nothing"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "pine_brew", "text": "Встать лагерем и варить хвойный отвар", "conditions": {}, "effects": {"stats": {"calories": -15, "vit_c": 25, "morale": 5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "cheremsha", "text": "Истолочь черемшу и дать жевать (−1 травы)", "conditions": {"items_required": {"herbs": 1}}, "effects": {"stats": {"vit_c": 40}, "tags_add": [], "items_add": {}, "items_remove": ["herbs"]}, "next_event": null}
     ]
   },
 
   "event_frozen_elk": {
     "title": "Вмёрзший сохатый",
-    "text": "На пятый день бурана вы наткнулись на вмёрзшую в лёд тушу лося. Волки не успели до неё добраться. Мясо твёрдое как камень, но внутри ещё сохранилась кровь. Отряд смотрит на тушу голодными глазами. Десятник отворачивается: он знает, что ты сейчас решишь.",
-    "weight": 40,
+    "text": "На пятый день бурана вы наткнулись на вмёрзшую в лёд тушу лося. Волки не успели до неё добраться. Мясо твёрдое как камень, но внутри ещё сохранилась кровь. Отряд смотрит на тушу голодными глазами.",
+    "weight": 25,
     "is_unique": false,
-    "trigger_conditions": {
-      "min_day": 3
-    },
+    "trigger_conditions": {"min_day": 3},
     "choices": [
-      {
-        "choice_id": "eat_raw",
-        "text": "Пить тёплую кровь и есть сырым",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "calories": 50,
-            "vit_c": 40,
-            "morale": -30
-          },
-          "tags_add": ["drank_blood"],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": "event_frozen_elk_disgust"
-      },
-      {
-        "choice_id": "salt_meat",
-        "text": "Засолить мясо впрок (−1 соль)",
-        "conditions": {
-          "items_required": {
-            "salt": 1
-          }
-        },
-        "effects": {
-          "stats": {
-            "calories": 100,
-            "morale": 10
-          },
-          "tags_add": [],
-          "items_add": {
-            "salted_meat": 5
-          },
-          "items_remove": ["salt"]
-        },
-        "next_event": null
-      },
-      {
-        "choice_id": "leave_it",
-        "text": "Пройти мимо (грех сытости)",
-        "conditions": {},
-        "effects": {
-          "stats": {
-            "morale": -10
-          },
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      }
+      {"choice_id": "eat_raw", "text": "Пить тёплую кровь и есть сырым", "conditions": {}, "effects": {"stats": {"calories": 50, "vit_c": 40, "morale": -30}, "tags_add": ["drank_blood"], "items_add": {}, "items_remove": []}, "next_event": "event_frozen_elk_disgust"},
+      {"choice_id": "salt_meat", "text": "Засолить мясо впрок (−1 соль)", "conditions": {"items_required": {"salt": 1}}, "effects": {"stats": {"calories": 100, "morale": 10}, "tags_add": [], "items_add": {"salted_meat": 5}, "items_remove": ["salt"]}, "next_event": null},
+      {"choice_id": "leave_it", "text": "Пройти мимо", "conditions": {}, "effects": {"stats": {"morale": -10}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
     ]
   },
 
   "event_frozen_elk_disgust": {
     "title": "Мерзость",
-    "text": "Вы разрываете тушу ножами. Лица людей измазаны бурой кровью. Десятник отвернулся и крестится. Голод утолён, цинга отступит на неделю — но что-то в отряде сломалось навсегда. Никто не смотрит тебе в глаза.",
+    "text": "Вы разрываете тушу ножами. Лица людей измазаны бурой кровью. Десятник отвернулся и крестится. Голод утолён, цинга отступит на неделю — но что-то в отряде сломалось навсегда.",
     "chain_only": true,
     "choices": [
-      {
-        "choice_id": "continue",
-        "text": "Вытереть лицо и идти дальше",
-        "conditions": {},
-        "effects": {
-          "stats": {},
-          "tags_add": [],
-          "items_add": {},
-          "items_remove": []
-        },
-        "next_event": null
-      }
+      {"choice_id": "continue", "text": "Вытереть лицо и идти дальше", "conditions": {}, "effects": {}, "next_event": null}
+    ]
+  },
+
+  "event_thaw": {
+    "title": "Оттепель",
+    "text": "Ночью подул тёплый ветер с юга. Снег под саней раскис, полозья вязнут. Идти тяжело, зато теплее — можно не жечь дрова. Река впереди ещё стоит, но лёд потемнел. Опасно.",
+    "weight": 40,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 4},
+    "choices": [
+      {"choice_id": "cross_river", "text": "Перейти реку по тёмному льду", "conditions": {}, "effects": {"stats": {"calories": -10, "morale": 5}, "tags_add": ["crossed_thin_ice"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "go_around", "text": "Обойти по берегу, потеряв день", "conditions": {}, "effects": {"stats": {"calories": -20}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_bear_den": {
+    "title": "Медвежья берлога",
+    "text": "В склоне холма — тёмная дыра. Пар идёт. Медведь-шатун не спит: зима тёплая, берлога сырая. Зверь голоден и зол. Но в берлоге — запас кедровых орехов, мёд, и шкура, которая согреет весь отряд.",
+    "weight": 20,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 8, "min_squad": 4},
+    "choices": [
+      {"choice_id": "attack", "text": "Идти на зверя с рогатиной", "conditions": {}, "effects": {"stats": {"calories": -20, "morale": 15}, "tags_add": ["killed_bear"], "items_add": {"bear_skin": 1}, "items_remove": []}, "next_event": null},
+      {"choice_id": "smoke_out", "text": "Выкурить дымом (−2 дрова)", "conditions": {"items_required": {"wood": 2}}, "effects": {"stats": {"calories": -10, "morale": 5}, "tags_add": [], "items_add": {"bear_skin": 1, "salted_meat": 3}, "items_remove": ["wood"]}, "next_event": null},
+      {"choice_id": "leave", "text": "Обойти берлогу стороной", "conditions": {}, "effects": {"stats": {"morale": -5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_ostyak_camp": {
+    "title": "Стойбище остяков",
+    "text": "На берегу — дымки. Остяки (ханты) жгут костры, сушат рыбу. Они не воюют с русскими, но и не рады. Их князь смотрит на вас из-под меховой шапки. Женщины прячут детей за чумами.",
+    "weight": 30,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 5},
+    "choices": [
+      {"choice_id": "trade", "text": "Предложить торг (−3 пушнины)", "conditions": {"items_required": {"fur": 3}}, "effects": {"stats": {"calories": 30, "morale": 10}, "tags_add": ["traded_ostyaks"], "items_add": {"fish": 5, "salt": 1}, "items_remove": ["fur"]}, "next_event": null},
+      {"choice_id": "gift", "text": "Подарить бисер и сукно", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["gifted_ostyaks"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "take", "text": "Взять рыбу силой", "conditions": {}, "effects": {"stats": {"calories": 40, "morale": -20}, "tags_add": ["robbed_ostyaks"], "items_add": {"fish": 5}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_ostyak_revenge": {
+    "title": "Ночные стрелы",
+    "text": "Караул не заметил. Стрелы полетели в темноте — остяки помнят обиду. Один казак убит, ещё двое ранены. Лошадей угнали. Костёр затоптан. Это месть.",
+    "weight": 100,
+    "is_unique": true,
+    "trigger_conditions": {"required_tag": "robbed_ostyaks", "min_day": 7},
+    "choices": [
+      {"choice_id": "pursue", "text": "Гнаться за ними", "conditions": {}, "effects": {"stats": {"calories": -20, "morale": -10}, "tags_add": ["chased_ostyaks"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "bury", "text": "Похоронить убитого и идти дальше", "conditions": {}, "effects": {"stats": {"calories": -5, "morale": -15}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "leave_gift", "text": "Оставить на месте бисер и уйти", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["peace_with_ostyaks"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_old_hut": {
+    "title": "Заброшенная изба",
+    "text": "В чаще — покосившаяся изба. Никого. На полу — обрывки шкур, топор без топорища, сундук с прогнившим дном. В углу — икона, почерневшая от сажи. Хозяева ушли давно и не вернулись.",
+    "weight": 25,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 4},
+    "choices": [
+      {"choice_id": "search", "text": "Обыскать избу", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": [], "items_add": {"wood": 3, "herbs": 1}, "items_remove": []}, "next_event": null},
+      {"choice_id": "pray", "text": "Помолиться и уйти", "conditions": {}, "effects": {"stats": {"morale": 10}, "tags_add": ["prayed_hut"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "burn", "text": "Сжечь избу (зачем?)", "conditions": {}, "effects": {"stats": {"morale": -10}, "tags_add": ["burned_hut"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_frozen_corpse": {
+    "title": "Вмёрзший казак",
+    "text": "Под снегом — человек. Одежда русская, борода в ледяных сосульках. При нём — грамотка в берестяном туеске. Это не первый отряд, посланный за Урал. Кто-то шёл до вас — и не дошёл.",
+    "weight": 15,
+    "is_unique": true,
+    "trigger_conditions": {"min_day": 10},
+    "choices": [
+      {"choice_id": "read", "text": "Прочитать грамотку", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["read_letter"], "items_add": {}, "items_remove": []}, "next_event": "event_frozen_corpse_letter"},
+      {"choice_id": "loot", "text": "Забрать припасы", "conditions": {}, "effects": {"stats": {"morale": -5}, "tags_add": ["robbed_corpse"], "items_add": {"salt": 1, "herbs": 2, "wood": 2}, "items_remove": []}, "next_event": null},
+      {"choice_id": "bury", "text": "Похоронить и помолиться", "conditions": {}, "effects": {"stats": {"morale": 10}, "tags_add": ["buried_corpse"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_frozen_corpse_letter": {
+    "title": "Грамотка",
+    "text": "«...шли мы за Камень, и стало нас мало. Ели кору. Ермак Тимофеевич, коли дойдёшь до нас — не ходи за Обь. Там земля пустая, а люди злые. Оставь здесь, кто может...» — дальше буквы смазаны.",
+    "chain_only": true,
+    "choices": [
+      {"choice_id": "continue", "text": "Спрятать грамотку за пазуху", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["warning_read"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_bukhara": {
+    "title": "Бухарский караван",
+    "text": "Из-за Иртыша идут верблюды. Бухарские купцы везут шёлк, чай, пряности. Они не воюют — торгуют со всеми. Их старшина смотрит на вас внимательно: «Что дашь за соль и халат?»",
+    "weight": 20,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 12, "required_item": "fur"},
+    "choices": [
+      {"choice_id": "trade_fur", "text": "Продать пушнину (−5 пушнины)", "conditions": {"items_required": {"fur": 5}}, "effects": {"stats": {"morale": 15}, "tags_add": ["traded_bukhara"], "items_add": {"salt": 3, "money": 50, "silk": 1}, "items_remove": ["fur"]}, "next_event": null},
+      {"choice_id": "trade_meat", "text": "Продать солёное мясо (−3 мяса)", "conditions": {"items_required": {"salted_meat": 3}}, "effects": {"stats": {"morale": 5}, "tags_add": [], "items_add": {"money": 20, "salt": 1}, "items_remove": ["salted_meat"]}, "next_event": null},
+      {"choice_id": "decline", "text": "Отказаться, идти дальше", "conditions": {}, "effects": {"stats": {}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_shaman": {
+    "title": "Шаман",
+    "text": "У костра — старик в шкурах. Лицо раскрашено охрой, бубен в руке. Он поёт. Говорит: «Ты идёшь в землю мёртвых. Я вижу твою смерть. Отдай мне то, что блестит — и я скажу, где пройдёшь».",
+    "weight": 15,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 6},
+    "choices": [
+      {"choice_id": "give_silver", "text": "Отдать серебряный крест", "conditions": {"items_required": {"silver_cross": 1}}, "effects": {"stats": {"morale": -10}, "tags_add": ["shaman_warning"], "items_add": {}, "items_remove": ["silver_cross"]}, "next_event": "event_shaman_warning"},
+      {"choice_id": "listen_free", "text": "Слушать бесплатно", "conditions": {}, "effects": {"stats": {"morale": -5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "leave", "text": "Уйти, крестясь", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["refused_shaman"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_shaman_warning": {
+    "title": "Слово шамана",
+    "text": "«У Вагая вода возьмёт твоего вождя. Не спи на острове. Не верь тому, кто говорит сладко. И не давай мёртвому лежать в снегу — иначе не будет тебе пути».",
+    "chain_only": true,
+    "choices": [
+      {"choice_id": "continue", "text": "Запомнить", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["vaga_warning"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_mutiny": {
+    "title": "Поножовщина",
+    "text": "Из-за куска сала началась драка. Двое казаков схватились за ножи. Один уже хрипит, зажимая бок. Кровь на снегу. Остальные смотрят — кто на тебя, кто на них. Дисциплина трещит по швам.",
+    "weight": 100,
+    "is_unique": false,
+    "trigger_conditions": {"max_morale": 25, "min_squad": 4},
+    "choices": [
+      {"choice_id": "hang", "text": "Повесить зачинщика", "conditions": {}, "effects": {"stats": {"morale": -15, "discipline": 20}, "tags_add": ["hanged_kazak"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "flog", "text": "Выпороть обоих линьками", "conditions": {}, "effects": {"stats": {"morale": -5, "discipline": 10}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "share", "text": "Отдать сало им и не наказывать", "conditions": {}, "effects": {"stats": {"morale": 10, "discipline": -15, "calories": -5}, "tags_add": ["weak_leader"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_dead_horse": {
+    "title": "Павший конь",
+    "text": "Лошадь провалилась под лёд. Пока вытаскивали — сломала ногу. Теперь стоит, дрожит, смотрит. Её нельзя вести дальше. Но и оставить нельзя — сожрёт волк. Мясо — есть. Кони — тянуть сани.",
+    "weight": 20,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 7},
+    "choices": [
+      {"choice_id": "kill", "text": "Зарезать и разделать", "conditions": {}, "effects": {"stats": {"calories": 60, "morale": -10}, "tags_add": ["ate_horse"], "items_add": {"salted_meat": 3}, "items_remove": []}, "next_event": null},
+      {"choice_id": "leave", "text": "Отпустить, пусть уходит", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_prayer_service": {
+    "title": "Молебен",
+    "text": "Священник отец Никифор ставит крест в снег. Служит молебен. Певчие — двое казаков — поют «Спаси, Господи». Отряд стоит без шапок. Ветер стих. На миг стало тихо, будто мир замер.",
+    "weight": 20,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 3},
+    "choices": [
+      {"choice_id": "pray", "text": "Стоять до конца службы", "conditions": {}, "effects": {"stats": {"morale": 15, "calories": -5}, "tags_add": ["prayed"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "fast", "text": "Наложить пост на 3 дня", "conditions": {}, "effects": {"stats": {"morale": 20, "calories": -30}, "tags_add": ["fasting"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_wolf_pack": {
+    "title": "Волчья стая",
+    "text": "Ночью волки подошли к лагерю. Глаза светятся в темноте. Их много — не меньше десяти. Они не нападают. Ждут. Кто-то в отряде не вернулся с обхода. Один казак. Молодой. Пропал.",
+    "weight": 25,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 5},
+    "choices": [
+      {"choice_id": "fire", "text": "Жечь костры всю ночь (−2 дрова)", "conditions": {"items_required": {"wood": 2}}, "effects": {"stats": {"calories": -10, "morale": -10}, "tags_add": ["lost_kazak"], "items_add": {}, "items_remove": ["wood"]}, "next_event": null},
+      {"choice_id": "hunt", "text": "Идти на волков с рогатинами", "conditions": {}, "effects": {"stats": {"calories": -15, "morale": 5}, "tags_add": ["killed_wolves"], "items_add": {"wolf_skin": 2}, "items_remove": []}, "next_event": null},
+      {"choice_id": "wait", "text": "Ждать до утра без костров", "conditions": {}, "effects": {"stats": {"calories": -5, "morale": -20}, "tags_add": ["lost_kazak"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_gangrene_battle": {
+    "title": "Чёрная нога",
+    "text": "У Фролки рана на голени почернела. Пахнет гнилью. Пальцы не двигаются. Он орёт по ночам. Кость видна. Или ногу отрезать — или он умрёт через три дня. Священник читает отходную, но Фролка ещё живой.",
+    "weight": 100,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 8, "max_vit_c": 40},
+    "choices": [
+      {"choice_id": "amputate", "text": "Отрезать ногу по колено (−1 ланцет)", "conditions": {"items_required": {"lancet": 1}}, "effects": {"stats": {"morale": -15, "calories": -10}, "tags_add": ["amputated"], "items_add": {}, "items_remove": ["lancet"]}, "next_event": null},
+      {"choice_id": "cut_foot", "text": "Отрезать только стопу", "conditions": {"items_required": {"lancet": 1}}, "effects": {"stats": {"morale": -5}, "tags_add": ["amputated_foot"], "items_add": {}, "items_remove": ["lancet"]}, "next_event": null},
+      {"choice_id": "wait", "text": "Ждать, авось пройдёт", "conditions": {}, "effects": {"stats": {"morale": -25, "squad_size": -1}, "tags_add": ["let_die"], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_ice_fishing": {
+    "title": "Рыбалка под льдом",
+    "text": "Озеро впереди. Лёд ещё держит. Под ним — рыба. Много. Чиры, муксуны, окуни. Сети есть, но тонкие. Проруби нужны. Работа на полдня. Но если поймать — отряд будет сыт неделю.",
+    "weight": 25,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 4, "max_calories": 150},
+    "choices": [
+      {"choice_id": "full_day", "text": "Рыбачить весь день (−1 день)", "conditions": {}, "effects": {"stats": {"calories": 60, "vit_c": 10, "morale": 10}, "tags_add": ["fished"], "items_add": {"fish": 8}, "items_remove": []}, "next_event": null},
+      {"choice_id": "half_day", "text": "Полдня, потом дальше", "conditions": {}, "effects": {"stats": {"calories": 20, "morale": 5}, "tags_add": [], "items_add": {"fish": 3}, "items_remove": []}, "next_event": null},
+      {"choice_id": "skip", "text": "Не тратить время", "conditions": {}, "effects": {"stats": {"morale": -5}, "tags_add": [], "items_add": {}, "items_remove": []}, "next_event": null}
+    ]
+  },
+
+  "event_frostbite_hands": {
+    "title": "Белые пальцы",
+    "text": "Иван провалился в полынью. Вытащили. Но руки белые, как бумага. Пальцы не сгибаются. Боль адская, потом — тишина. Он смотрит на свои руки и молчит. Он больше не сможет держать саблю.",
+    "weight": 20,
+    "is_unique": false,
+    "trigger_conditions": {"min_day": 5},
+    "choices": [
+      {"choice_id": "warm_water", "text": "Отогревать в тёплой воде (−2 дрова)", "conditions": {"items_required": {"wood": 2}}, "effects": {"stats": {"calories": -10, "morale": 10}, "tags_add": ["healed_frostbite"], "items_add": {}, "items_remove": ["wood"]}, "next_event": null},
+      {"choice_id": "snow", "text": "Растереть снегом", "conditions": {}, "effects": {"stats": {"morale": -15, "squad_size": -1}, "tags_add": ["frostbite_death"], "items_add": {}, "items_remove": []}, "next_event": null},
+      {"choice_id": "amputate_fingers", "text": "Отрезать пальцы (−1 ланцет)", "conditions": {"items_required": {"lancet": 1}}, "effects": {"stats": {"morale": -10}, "tags_add": ["lost_fingers"], "items_add": {}, "items_remove": ["lancet"]}, "next_event": null}
     ]
   }
 }

@@ -26,6 +26,14 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.telegram_id}>"
 
+    # Подписка на расширения. NULL = нет подписки.
+    # Дата в будущем = активна. Дата в прошлом = истекла.
+    subscription_until = db.Column(db.DateTime, nullable=True)
+
+    # ID транзакции в платёжной системе. Для идемпотентности и аудита.
+    payment_provider = db.Column(db.String(32), nullable=True)   # "tribute", "boosty"
+    payment_customer_id = db.Column(db.String(64), nullable=True) # ID в их системе
+
 
 class Run(db.Model):
     __tablename__ = 'runs'
@@ -56,3 +64,8 @@ class Run(db.Model):
 
     def __repr__(self):
         return f"<Run UserID:{self.user_id} Day:{self.day}>"
+        
+    is_premium_run = db.Column(db.Boolean, default=False)
+    
+        # Дисциплина отряда. 0 = бунт неизбежен, 100 = железный порядок.
+    discipline = db.Column(db.Integer, default=70)

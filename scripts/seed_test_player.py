@@ -50,6 +50,7 @@ def seed(tg_id: int, event_id: str | None, vit_c: int):
             vit_c=vit_c,
             morale=80,
             warmth=100,
+            discipline=70, 
             squad_size=10,
             inventory={"salt": 2, "lancet": 1, "herbs": 3, "wood": 10},
             tags=[],

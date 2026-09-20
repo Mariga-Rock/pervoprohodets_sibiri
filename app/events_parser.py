@@ -35,6 +35,14 @@ def _apply_stats(run, stats_diff):
         run.morale = max(0, min(run.morale + stats_diff["morale"], MAX_MORALE))
     if "warmth" in stats_diff:
         run.warmth = max(0, min(run.warmth + stats_diff["warmth"], MAX_WARMTH))
+        # дисциплина от 0 до 100
+    if "discipline" in stats_diff:
+        run.discipline = max(0, min(run.discipline + stats_diff["discipline"], 100))
+
+    # размер отряда. Только нижняя граница 0, верхней нет
+    # (могут прийти подкрепления).
+    if "squad_size" in stats_diff:
+        run.squad_size = max(0, run.squad_size + stats_diff["squad_size"])
 
 
 def _apply_tags(run, tags_to_add):

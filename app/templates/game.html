@@ -2,180 +2,330 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121212">
     <title>Первопроходец Сибири</title>
+
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <style>
-        /* === МИНИМАЛЬНЫЙ СТИЛЬ — КРАСОТА БУДЕТ НА ЭТАПЕ 9 === */
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Georgia', serif;
-            background: #121212;
-            color: #e0dcd3;
+        /* ============================================
+           ПАЛИТРА «САЖА И СНЕГ»
+           ============================================ */
+        :root {
+            --bg: #121212;              /* пепельно-чёрный */
+            --bg-panel: #1a1a1a;        /* чуть светлее для панелей */
+            --text: #e0dcd3;            /* старая кость */
+            --text-dim: #8a8a8a;        /* тускло-серый */
+            --border: #333333;          /* тёмно-серый */
+            --danger: #8b0000;          /* запёкшаяся кровь */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
             margin: 0;
             padding: 0;
-            min-height: 100vh;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
+            line-height: 1.6;
+            /* Принудительная тёмная тема — не реагируем на настройки ОС */
+            color-scheme: dark;
+        }
+
+        /* ============================================
+           АРХИТЕКТУРА: 3 ЗОНЫ
+           ============================================ */
+        body {
             display: flex;
             flex-direction: column;
-            line-height: 1.6;
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
-        /* --- СТАТУС-БАР (верх) --- */
+        /* --- ЗОНА 1: СТАТУС-БАР (верх, ~15%) --- */
         #stats-bar {
-            padding: 12px 16px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
+            flex: 0 0 auto;
+            padding: 10px 14px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 13px;
             display: flex;
-            gap: 16px;
+            gap: 12px 16px;
             flex-wrap: wrap;
+            align-items: center;
         }
-        #stats-bar span { white-space: nowrap; }
-        .stat-critical { color: #8b0000; font-weight: bold; }
 
-        /* --- ЦЕНТР: ТЕКСТ --- */
+        #stats-bar .stat {
+            white-space: nowrap;
+            color: var(--text-dim);
+            transition: color 0.2s;
+        }
+
+        #stats-bar .stat.critical {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* --- ЗОНА 2: ТЕКСТ (центр, ~60%) --- */
         #content {
-            flex: 1;
-            padding: 24px 16px;
+            flex: 1 1 auto;
             overflow-y: auto;
-            max-width: 700px;
-            margin: 0 auto;
+            padding: 22px 18px;
+            max-width: 720px;
             width: 100%;
+            margin: 0 auto;
+            -webkit-overflow-scrolling: touch;
         }
+
         #title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 16px;
-            color: #fff;
+            font-size: 19px;
+            font-weight: 700;
+            margin: 0 0 14px 0;
+            color: var(--text);
+            letter-spacing: 0.02em;
         }
+
         #text {
             font-size: 17px;
-            margin-bottom: 24px;
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
-        /* --- НИЗ: КНОПКИ --- */
+        #text.typing::after {
+            content: '▌';
+            color: var(--danger);
+            animation: blink 0.8s step-end infinite;
+            font-weight: 100;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .game-over {
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 14px;
+            letter-spacing: 0.04em;
+        }
+
+        /* --- ЗОНА 3: КНОПКИ (низ, ~25%, sticky) --- */
         #actions {
-            padding: 16px;
-            background: #1a1a1a;
-            border-top: 1px solid #333;
+            flex: 0 0 auto;
+            padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0));
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-width: 700px;
-            margin: 0 auto;
+            gap: 8px;
+            max-width: 720px;
             width: 100%;
+            margin: 0 auto;
         }
+
+        /* ============================================
+           КНОПКИ: РЕЗКИЙ КОНТРАСТ, БЕЗ АНИМАЦИЙ
+           ============================================ */
         button {
-            padding: 14px;
+            padding: 13px 16px;
             background: transparent;
-            border: 1px solid #333;
-            color: #e0dcd3;
-            font-family: 'Courier New', monospace;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             font-size: 15px;
+            font-weight: 400;
             cursor: pointer;
             text-align: center;
+            /* Никаких плавных переходов — щелчок */
             transition: none;
+            user-select: none;
+            -webkit-user-select: none;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        button:hover:not(:disabled) {
-            background: #e0dcd3;
-            color: #121212;
-            border-color: #e0dcd3;
+
+        button:active:not(:disabled) {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
         }
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        button.danger {
-            border-color: #8b0000;
-            color: #8b0000;
-        }
-        button.danger:hover:not(:disabled) {
-            background: #8b0000;
-            color: #e0dcd3;
-        }
+
+        button:disabled,
         button.locked {
-            opacity: 0.5;
+            opacity: 0.35;
             cursor: not-allowed;
-            color: #666;
+            color: var(--text-dim);
+            border-color: #222;
         }
+
         button.locked::before {
             content: "🔒 ";
+            margin-right: 4px;
+            opacity: 0.7;
         }
 
-        /* --- ЭКРАН ВВОДА ID --- */
+        button.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        button.danger:active:not(:disabled) {
+            background: var(--danger);
+            color: var(--text);
+            border-color: var(--danger);
+        }
+
+        /* ============================================
+           ЭКРАН ВХОДА
+           ============================================ */
         #login-screen {
-            padding: 40px 16px;
-            max-width: 400px;
+            flex: 1;
+            padding: 40px 24px;
+            max-width: 420px;
             margin: 0 auto;
             width: 100%;
-        }
-        #login-screen input {
-            width: 100%;
-            padding: 12px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            color: #e0dcd3;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            margin-bottom: 12px;
-        }
-        #login-screen input:focus {
-            outline: none;
-            border-color: #e0dcd3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        /* --- GAME OVER --- */
-        .game-over {
-            color: #8b0000;
-            font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 16px;
+        #login-screen h1 {
+            font-family: Georgia, serif;
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.02em;
+        }
+
+        #login-screen p {
+            color: var(--text-dim);
+            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 14px;
+            margin: 0 0 24px 0;
+        }
+
+        #login-screen input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            margin-bottom: 14px;
+            border-radius: 0;
+        }
+
+        #login-screen input:focus {
+            outline: none;
+            border-color: var(--text);
+        }
+
+        /* ============================================
+           СКРОЛЛБАР (тонкий, тёмный)
+           ============================================ */
+        #content::-webkit-scrollbar {
+            width: 4px;
+        }
+        #content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #content::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
         }
     </style>
 </head>
 <body>
 
-<!-- ЭКРАН ВВОДА ID (пока вручную) -->
-<div id="login-screen">
+<!-- ЭКРАН ВВОДА ID (для отладки в браузере) -->
+<div id="login-screen" style="display: none;">
     <h1>Первопроходец Сибири</h1>
-    <p style="color: #888;">Введи свой Telegram ID, чтобы начать:</p>
+    <p>Введи Telegram ID, чтобы начать:</p>
     <input type="number" id="tg-input" placeholder="123456789" value="123123123">
     <button onclick="login()">Войти</button>
 </div>
 
 <!-- ОСНОВНОЙ ЭКРАН ИГРЫ -->
-<div id="game-screen" style="display: none; flex: 1; display: none; flex-direction: column;">
-    <!-- Статус-бар -->
+<div id="game-screen" style="display: none; flex: 1; flex-direction: column; min-height: 0;">
     <div id="stats-bar">
-        <span id="stat-day">📅 День 1</span>
-        <span id="stat-distance">🛤 0 вёрст</span>
-        <span id="stat-calories">🍖 300</span>
-        <span id="stat-vit-c">🍋 100</span>
-        <span id="stat-morale">🔥 100</span>
-        <span id="stat-squad">👥 10</span>
+        <span class="stat" id="stat-day">📅 День 1</span>
+        <span class="stat" id="stat-distance">🛤 0 вёрст</span>
+        <span class="stat" id="stat-calories">🍖 300</span>
+        <span class="stat" id="stat-vit-c">🍋 100</span>
+        <span class="stat" id="stat-morale">🔥 100</span>
+        <span class="stat" id="stat-squad">👥 10</span>
     </div>
 
-    <!-- Центр: текст -->
     <div id="content">
         <div id="title"></div>
         <div id="text"></div>
     </div>
 
-    <!-- Низ: кнопки -->
     <div id="actions"></div>
 </div>
 
 <script>
 // ============================================================
+// TELEGRAM WEB APP
+// ============================================================
+const tg = window.Telegram?.WebApp;
+
+if (tg) {
+    tg.ready();
+    tg.expand();
+    // Скрываем кнопку "Назад" в Telegram (не нужна в игре)
+    if (tg.BackButton) tg.BackButton.hide();
+    // Отключаем вертикальный свайп для закрытия
+    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+}
+
+function haptic(type) {
+    // Типы: 'light', 'medium', 'heavy', 'error', 'success'
+    if (!tg?.HapticFeedback) return;
+    try {
+        if (type === 'error' || type === 'success') {
+            tg.HapticFeedback.notificationOccurred(type);
+        } else {
+            tg.HapticFeedback.impactOccurred(type);
+        }
+    } catch (e) { /* ignore */ }
+}
+
+function getTelegramId() {
+    const id = tg?.initDataUnsafe?.user?.id;
+    if (id) return id;
+    const saved = localStorage.getItem('tg_id');
+    if (saved) return parseInt(saved, 10);
+    return null;
+}
+
+function getTelegramUsername() {
+    return tg?.initDataUnsafe?.user?.username || null;
+}
+
+// ============================================================
 // СОСТОЯНИЕ
 // ============================================================
 let TG_ID = null;
+let typewriterTimer = null;
 
 // ============================================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// API
 // ============================================================
-async function api(path, payload) {
+async function api(path, payload = {}) {
     const res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,28 +334,83 @@ async function api(path, payload) {
     return { status: res.status, body: await res.json() };
 }
 
+// ============================================================
+// ПЕЧАТНАЯ МАШИНКА
+// ============================================================
+function typeWriter(element, text, speed = 25) {
+    // Отменяем предыдущую печать, если была
+    if (typewriterTimer) {
+        clearInterval(typewriterTimer);
+        typewriterTimer = null;
+    }
+
+    element.textContent = '';
+    element.classList.add('typing');
+
+    let i = 0;
+    typewriterTimer = setInterval(() => {
+        // Каждые 3 буквы — лёгкая вибрация (для атмосферы)
+        if (i % 3 === 0) haptic('light');
+
+        element.textContent += text[i];
+        i++;
+
+        if (i >= text.length) {
+            clearInterval(typewriterTimer);
+            typewriterTimer = null;
+            element.classList.remove('typing');
+        }
+    }, speed);
+}
+
+function finishTyping() {
+    // Мгновенно закончить печать — по клику на текст
+    if (typewriterTimer) {
+        clearInterval(typewriterTimer);
+        typewriterTimer = null;
+        document.getElementById('text').classList.remove('typing');
+    }
+}
+
+// ============================================================
+// UI
+// ============================================================
 function setStats(run) {
     document.getElementById('stat-day').textContent = `📅 День ${run.day}`;
     document.getElementById('stat-distance').textContent = `🛤 ${run.distance_covered} вёрст`;
 
     const cal = document.getElementById('stat-calories');
     cal.textContent = `🍖 ${run.calories}`;
-    cal.className = run.calories < 30 ? 'stat-critical' : '';
+    cal.classList.toggle('critical', run.calories < 30);
 
     const vit = document.getElementById('stat-vit-c');
     vit.textContent = `🍋 ${run.vit_c}`;
-    vit.className = run.vit_c < 30 ? 'stat-critical' : '';
+    vit.classList.toggle('critical', run.vit_c < 30);
 
     const mor = document.getElementById('stat-morale');
     mor.textContent = `🔥 ${run.morale}`;
-    mor.className = run.morale < 20 ? 'stat-critical' : '';
+    mor.classList.toggle('critical', run.morale < 20);
 
     document.getElementById('stat-squad').textContent = `👥 ${run.squad_size}`;
 }
 
-function setContent(title, text) {
+function setContent(title, text, useTypewriter = true) {
     document.getElementById('title').textContent = title;
-    document.getElementById('text').textContent = text;
+
+    const textEl = document.getElementById('text');
+    if (useTypewriter && text && text.length > 0) {
+        typeWriter(textEl, text, 25);
+    } else {
+        if (typewriterTimer) {
+            clearInterval(typewriterTimer);
+            typewriterTimer = null;
+        }
+        textEl.textContent = text;
+        textEl.classList.remove('typing');
+    }
+
+    // Прокручиваем контент вверх при новом тексте
+    document.getElementById('content').scrollTop = 0;
 }
 
 function clearActions() {
@@ -221,82 +426,113 @@ function addButton(text, onclick, options = {}) {
         btn.disabled = true;
         btn.title = options.lockReason || 'Недоступно';
     } else {
-        btn.onclick = onclick;
+        btn.onclick = () => {
+            haptic('medium');
+            onclick();
+        };
     }
     document.getElementById('actions').appendChild(btn);
 }
 
+function showScreen(name) {
+    const login = document.getElementById('login-screen');
+    const game = document.getElementById('game-screen');
+
+    if (name === 'login') {
+        login.style.display = 'flex';
+        game.style.display = 'none';
+    } else {
+        login.style.display = 'none';
+        game.style.display = 'flex';
+    }
+}
+
 // ============================================================
-// ЭКРАН 1: ВХОД
+// ЗАПУСК
 // ============================================================
-async function login() {
-    const id = parseInt(document.getElementById('tg-input').value, 10);
-    if (!id || isNaN(id)) {
-        alert('Введи корректный ID');
+async function boot() {
+    TG_ID = getTelegramId();
+
+    if (!TG_ID) {
+        showScreen('login');
         return;
     }
-    TG_ID = id;
 
-    // Пробуем получить состояние
+    localStorage.setItem('tg_id', TG_ID);
+    showScreen('game');
+
     const { body: state } = await api('/api/get_state');
 
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('game-screen').style.display = 'flex';
-
     if (state.status === 'no_user' || state.status === 'no_run') {
-        // Нет активной игры — создаём
         await startNewGame();
     } else if (state.status === 'ok') {
-        // Есть игра — показываем её состояние
         setStats(state.run);
         if (state.run.current_event_id) {
-            // Игрок висит в ивенте — нужно восстановить его
-            // Пока просто покажем сообщение
-            setContent(
-                'Экспедиция',
-                'Вы находитесь в ивенте. Нажмите «Идти дальше», чтобы продолжить.'
-            );
-            clearActions();
-            addButton('Идти дальше', onNextTurn);
+            await loadCurrentEvent();
         } else {
             showIdle();
         }
     }
 }
 
+async function login() {
+    const id = parseInt(document.getElementById('tg-input').value, 10);
+    if (!id || isNaN(id)) {
+        haptic('error');
+        return;
+    }
+    haptic('medium');
+    TG_ID = id;
+    localStorage.setItem('tg_id', TG_ID);
+    await boot();
+}
+
 // ============================================================
-// ЭКРАН 2: НАЧАЛО НОВОЙ ИГРЫ
+// НОВАЯ ИГРА
 // ============================================================
 async function startNewGame() {
-    const { body } = await api('/api/start_game');
+    const { body } = await api('/api/start_game', {
+        username: getTelegramUsername(),
+    });
+
     if (body.status === 'created' || body.status === 'already_running') {
         setStats(body.run);
         showIdle();
     } else {
-        setContent('Ошибка', JSON.stringify(body));
+        setContent('Ошибка', JSON.stringify(body), false);
     }
 }
 
 function showIdle() {
-    setContent('Экспедиция', 'Вы вышли из Тобольска. Ветер бьёт в лицо. Пора идти дальше.');
+    setContent(
+        'Экспедиция',
+        'Вы вышли из Нижнего Чусовского Городка. Ветер в лицо.'
+    );
     clearActions();
     addButton('Идти дальше', onNextTurn);
 }
 
 // ============================================================
-// ЭКРАН 3: ИДТИ ДАЛЬШЕ
+// ИДТИ ДАЛЬШЕ
 // ============================================================
 async function onNextTurn() {
+    haptic('light');
     clearActions();
-    setContent('...', 'Идём по тайге...');
+    setContent('...', 'Идём по тайге...', false);
 
     const { body } = await api('/api/next_turn');
 
     if (body.status === 'game_over') {
-        setStats({ day: body.day, distance_covered: body.distance_covered, calories: 0, vit_c: 0, morale: 0, squad_size: 0 });
-        const content = document.getElementById('text');
-        content.innerHTML = `<div class="game-over">☠ ${body.reason}</div>Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`;
+        haptic('error');
+        setStats({
+            day: body.day, distance_covered: body.distance_covered,
+            calories: 0, vit_c: 0, morale: 0, squad_size: 0,
+        });
+        const text = `Вы прошли ${body.distance_covered} вёрст ` +
+                     `и погибли на ${body.day}-й день.`;
         document.getElementById('title').textContent = 'Конец пути';
+        const textEl = document.getElementById('text');
+        textEl.innerHTML = `<div class="game-over">☠ ${body.reason}</div>${text}`;
         clearActions();
         addButton('Начать заново', onRestart, { danger: true });
         return;
@@ -305,39 +541,50 @@ async function onNextTurn() {
     setStats(body.run);
 
     if (body.type === 'event') {
-        setContent(body.event_title, body.event_text);
-        clearActions();
-        body.choices.forEach(ch => {
-            const cond = ch.conditions || {};
-            const required = cond.items_required || {};
-            let locked = false;
-            let lockReason = '';
-            for (const [item, qty] of Object.entries(required)) {
-                if ((body.run.inventory[item] || 0) < qty) {
-                    locked = true;
-                    lockReason = `Нужно: ${item} × ${qty}`;
-                    break;
-                }
-            }
-            addButton(ch.text, () => onMakeChoice(body.event_id, ch.choice_id), { locked, lockReason });
-        });
+        // Ивент — это «событие», лёгкая вибрация
+        haptic('medium');
+        renderEvent(body.event_id, body.event_title, body.event_text, body.choices, body.run);
     } else if (body.type === 'quiet_day') {
         setContent('Тихий день', body.message);
         clearActions();
         addButton('Идти дальше', onNextTurn);
     } else {
-        setContent('Ошибка', JSON.stringify(body));
+        setContent('Ошибка', JSON.stringify(body), false);
         clearActions();
         addButton('Идти дальше', onNextTurn);
     }
 }
 
+function renderEvent(eventId, title, text, choices, run) {
+    setContent(title, text);
+    clearActions();
+
+    choices.forEach(ch => {
+        const cond = ch.conditions || {};
+        const required = cond.items_required || {};
+        let locked = false;
+        let lockReason = '';
+        for (const [item, qty] of Object.entries(required)) {
+            if ((run.inventory[item] || 0) < qty) {
+                locked = true;
+                lockReason = `Нужно: ${item} × ${qty}`;
+                break;
+            }
+        }
+        addButton(
+            ch.text,
+            () => onMakeChoice(eventId, ch.choice_id),
+            { locked, lockReason }
+        );
+    });
+}
+
 // ============================================================
-// ЭКРАН 4: ВЫБОР В ИВЕНТЕ
+// ВЫБОР В ИВЕНТЕ
 // ============================================================
 async function onMakeChoice(eventId, choiceId) {
     clearActions();
-    setContent('...', 'Ваш выбор сделан...');
+    setContent('...', 'Ваш выбор сделан...', false);
 
     const { body } = await api('/api/make_choice', {
         event_id: eventId,
@@ -345,7 +592,8 @@ async function onMakeChoice(eventId, choiceId) {
     });
 
     if (body.status === 'error') {
-        setContent('Ошибка', body.message);
+        haptic('error');
+        setContent('Ошибка', body.message, false);
         clearActions();
         addButton('Идти дальше', onNextTurn);
         return;
@@ -354,51 +602,56 @@ async function onMakeChoice(eventId, choiceId) {
     setStats(body.run);
 
     if (body.next_event) {
-        // Попали в следующий ивент цепочки — покажем его
-        // Проще всего: следующий next_turn выкинет нас сюда же,
-        // но мы не знаем текст. Поэтому перезагрузим состояние через get_state.
+        // Chain-ивент — загружаем следующий
         await loadCurrentEvent();
     } else {
         // Возврат на тропу
+        haptic('success');
         showIdle();
     }
 }
 
 // ============================================================
-// ЗАГРУЗКА ТЕКУЩЕГО ИВЕНТА (для восстановления сессии)
+// ЗАГРУЗКА ТЕКУЩЕГО ИВЕНТА
 // ============================================================
 async function loadCurrentEvent() {
-    const { body } = await api('/api/get_state');
-    if (body.status !== 'ok' || !body.run.current_event_id) {
+    const { body: state } = await api('/api/get_state');
+    if (state.status !== 'ok' || !state.run.current_event_id) {
         showIdle();
         return;
     }
 
-    // Загружаем данные ивента через прямой запрос
-    // Пока сделаем простой трюк: попробуем next_turn — он выдаст ошибку,
-    // потому что мы в ивенте. Проще временно перейти на «тихий день».
-    // ПРАВИЛЬНО: добавим отдельный маршрут /api/get_event. Но пока — упростим.
-    setContent(
-        'Ивент продолжается',
-        'Вы в середине ивента. Нажмите «Идти дальше», чтобы обновить.'
-    );
-    clearActions();
-    addButton('Идти дальше', onNextTurn);
+    const eventId = state.run.current_event_id;
+    setStats(state.run);
+
+    const { body: ev } = await api('/api/get_event', { event_id: eventId });
+
+    if (ev.status !== 'ok') {
+        setContent('Ошибка загрузки ивента', ev.message || JSON.stringify(ev), false);
+        clearActions();
+        addButton('Идти дальше', onNextTurn);
+        return;
+    }
+
+    renderEvent(ev.event_id, ev.event_title, ev.event_text, ev.choices, state.run);
 }
 
 // ============================================================
-// РЕСТАРТ ПОСЛЕ СМЕРТИ
+// РЕСТАРТ
 // ============================================================
 async function onRestart() {
     await startNewGame();
 }
 
 // ============================================================
-// АВТОСТАРТ — если ID уже введён (для отладки)
+// КЛИК ПО ТЕКСТУ = МГНОВЕННО ЗАКОНЧИТЬ ПЕЧАТЬ
 // ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-    // Ничего не делаем автоматически, ждём нажатия «Войти»
-});
+document.getElementById('content').addEventListener('click', finishTyping);
+
+// ============================================================
+// СТАРТ
+// ============================================================
+window.addEventListener('DOMContentLoaded', boot);
 </script>
 
 </body>
