@@ -148,7 +148,8 @@ def serialize_run(run):
         "vit_c": run.vit_c,
         "morale": run.morale,
         "warmth": run.warmth,
-        "discipline": run.discipline,        # ← НОВОЕ
+        "discipline": run.discipline, 
+        "has_priest": run.has_priest,       
         "squad_size": run.squad_size,
         "inventory": run.inventory,
         "tags": run.tags,

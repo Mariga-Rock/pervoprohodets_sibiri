@@ -18,6 +18,10 @@ from app.constants import (
     MAX_CALORIES, MAX_VIT_C, MAX_MORALE, MAX_WARMTH,
 )
 
+
+# ---------------------------------------------------------------------------
+# СЛЕПКИ И ПОСЛЕДСТВИЯ
+# ---------------------------------------------------------------------------
 def _snapshot_run(run):
     """Слепок состояния Run ДО применения эффектов."""
     return {
@@ -34,7 +38,6 @@ def _snapshot_run(run):
 def _build_consequences(snap_before, run, choice_data):
     """
     Собирает последствия: нарратив (из JSON, если есть) + список дельт.
-
     Дельта пишется только для того, что реально изменилось.
     """
     deltas = []
@@ -65,7 +68,6 @@ def _build_consequences(snap_before, run, choice_data):
             sign = "+" if d > 0 else "−"
             deltas.append(f"{sign}{abs(d)} {item}")
 
-    # Нарратив: если в JSON есть — используем, иначе — авто из текста кнопки
     narrative = choice_data.get("consequences")
     if not narrative:
         narrative = f"Вы выбрали: {choice_data.get('text', '')}."
@@ -74,12 +76,13 @@ def _build_consequences(snap_before, run, choice_data):
         "narrative": narrative,
         "deltas": deltas,
     }
-    
+
+
+# ---------------------------------------------------------------------------
+# ПРИМЕНЕНИЕ ЭФФЕКТОВ
+# ---------------------------------------------------------------------------
 def _apply_stats(run, stats_diff):
-    """
-    Применяет изменения статов с ограничителями.
-    stats_diff — словарь вида {"calories": -15, "morale": 5}.
-    """
+    """Применяет изменения статов с ограничителями."""
     if not stats_diff:
         return
 
@@ -91,12 +94,8 @@ def _apply_stats(run, stats_diff):
         run.morale = max(0, min(run.morale + stats_diff["morale"], MAX_MORALE))
     if "warmth" in stats_diff:
         run.warmth = max(0, min(run.warmth + stats_diff["warmth"], MAX_WARMTH))
-        # дисциплина от 0 до 100
     if "discipline" in stats_diff:
         run.discipline = max(0, min(run.discipline + stats_diff["discipline"], 100))
-
-    # размер отряда. Только нижняя граница 0, верхней нет
-    # (могут прийти подкрепления).
     if "squad_size" in stats_diff:
         run.squad_size = max(0, run.squad_size + stats_diff["squad_size"])
 
@@ -127,30 +126,26 @@ def _apply_inventory(run, items_add, items_remove):
 def _check_conditions(run, conditions):
     """
     Проверяет, выполнены ли условия выбора.
-    Возвращает (True, None) если всё ок, или (False, "причина") если нет.
+    Возвращает (True, None) или (False, "причина").
     """
     if not conditions:
         return True, None
 
-    # Требуемые предметы
     required = conditions.get("items_required") or {}
     for item, qty in required.items():
         if run.inventory.get(item, 0) < qty:
             return False, f"Не хватает предмета: {item}"
 
-    # Требуемые теги
     required_tags = conditions.get("tags_required") or []
     for tag in required_tags:
         if tag not in run.tags:
             return False, f"Не хватает условия: {tag}"
 
-    # Минимальные статы
     stats_min = conditions.get("stats_min") or {}
     for stat, min_val in stats_min.items():
         if getattr(run, stat, 0) < min_val:
             return False, f"Слишком низкий {stat}"
 
-    # Максимальные статы
     stats_max = conditions.get("stats_max") or {}
     for stat, max_val in stats_max.items():
         if getattr(run, stat, 0) > max_val:
@@ -159,12 +154,15 @@ def _check_conditions(run, conditions):
     return True, None
 
 
+# ---------------------------------------------------------------------------
+# ГЛАВНАЯ ФУНКЦИЯ
+# ---------------------------------------------------------------------------
 def process_event_choice(run, event_id: str, choice_id: str):
     """
     Обрабатывает выбор игрока.
-
-    Возвращает словарь:
-        Успех:  {"status": "ok", "next_event": <id или None>, "run": <сериализация>}
+    Возвращает:
+        Успех:  {"status": "ok", "next_event": <id|None>, "run": <Run>,
+                 "consequences": {...}}
         Ошибка: {"status": "error", "message": "..."}
     """
     # 1. РАССИНХРОНИЗАЦИЯ
@@ -205,13 +203,11 @@ def process_event_choice(run, event_id: str, choice_id: str):
     if not ok:
         return {"status": "error", "message": err}
 
-    # 5. ПРИМЕНЕНИЕ ЭФФЕКТОВ
-           # 5. ПРИМЕНЕНИЕ ЭФФЕКТОВ
-    effects = choice_data.get("effects") or {}
-
-    # Снимок ДО применения — чтобы посчитать дельты
+    # 5. СНИМОК ДО ЭФФЕКТОВ
     snap_before = _snapshot_run(run)
 
+    # 6. ПРИМЕНЕНИЕ ЭФФЕКТОВ
+    effects = choice_data.get("effects") or {}
     _apply_stats(run, effects.get("stats") or {})
     _apply_tags(run, effects.get("tags_add") or [])
     _apply_inventory(
@@ -220,26 +216,26 @@ def process_event_choice(run, event_id: str, choice_id: str):
         effects.get("items_remove") or [],
     )
 
-    # Если отряд уменьшился — кто-то умер. Требуется отпевание
+    # 7. СМЕРТЬ КАЗАКА → ТРЕБУЕТСЯ МОЛЕБЕН
     if run.squad_size < snap_before["squad_size"]:
         if "need_funeral" not in run.tags:
             run.tags.append("need_funeral")
 
-    # Собираем последствия
+    # 8. ПОСЛЕДСТВИЯ
     consequences = _build_consequences(snap_before, run, choice_data)
 
-    # 6. NEXT EVENT
+    # 9. NEXT EVENT
     next_event_id = choice_data.get("next_event")
     run.current_event_id = next_event_id
 
-    # 7. МАГИЯ SQLALCHEMY ДЛЯ JSON-ПОЛЕЙ
-    # Без flag_modified изменения в inventory и tags НЕ сохранятся.
+    # 10. МАГИЯ SQLALCHEMY ДЛЯ JSON-ПОЛЕЙ
     flag_modified(run, "inventory")
     flag_modified(run, "tags")
 
+    # 11. СОХРАНЕНИЕ
     db.session.commit()
 
-        return {
+    return {
         "status": "ok",
         "next_event": next_event_id,
         "run": run,

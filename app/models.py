@@ -69,3 +69,5 @@ class Run(db.Model):
     
         # Дисциплина отряда. 0 = бунт неизбежен, 100 = железный порядок.
     discipline = db.Column(db.Integer, default=70)
+        # Есть ли в отряде священник. По умолчанию — да (с Ермаком шли 3 священника).
+    has_priest = db.Column(db.Boolean, default=True)
