@@ -1,0 +1,206 @@
+{
+  "event_blizzard": {
+    "title": "Буран",
+    "text": "Снежная стена обрушилась на отряд к полудню. Ветер сбивает с ног, лица режет ледяной крупой. Костёр не разжечь. Сани тонут в снегу по самые борта. Десятник кричит в ухо: «Что делать, атаман?!»",
+    "weight": 50,
+    "is_unique": false,
+    "trigger_conditions": {
+      "min_day": 2
+    },
+    "choices": [
+      {
+        "choice_id": "push_through",
+        "text": "Идти напролом",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "calories": -15,
+            "morale": -5
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      },
+      {
+        "choice_id": "wait_it_out",
+        "text": "Переждать в овраге",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "calories": -20,
+            "morale": -10
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      },
+      {
+        "choice_id": "big_fire",
+        "text": "Разжечь большой костёр в укрытии (−1 дрова)",
+        "conditions": {
+          "items_required": {
+            "wood": 1
+          }
+        },
+        "effects": {
+          "stats": {
+            "calories": -10,
+            "morale": 10
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": ["wood"]
+        },
+        "next_event": null
+      }
+    ]
+  },
+
+  "event_scurvy_start": {
+    "title": "Кровоточащие дёсны",
+    "text": "Утром десятник Остап выплюнул зуб на снег. Дёсны у него синие, распухшие, как гнилая свёкла. Вчера он ещё смеялся, а сегодня еле встал с нар. Ещё трое жалуются на слабость. Старые рубцы на плечах, затянувшиеся годы назад, снова начали кровить. Пришла цинга.",
+    "weight": 100,
+    "is_unique": true,
+    "trigger_conditions": {
+      "max_vit_c": 30,
+      "min_day": 5
+    },
+    "choices": [
+      {
+        "choice_id": "bloodletting",
+        "text": "Кровопускание (метод Галена)",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "morale": -20
+          },
+          "tags_add": ["bled_for_nothing"],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      },
+      {
+        "choice_id": "pine_brew",
+        "text": "Встать лагерем и варить хвойный отвар",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "calories": -15,
+            "vit_c": 25,
+            "morale": 5
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      },
+      {
+        "choice_id": "cheremsha",
+        "text": "Истолочь черемшу и дать жевать (−1 травы)",
+        "conditions": {
+          "items_required": {
+            "herbs": 1
+          }
+        },
+        "effects": {
+          "stats": {
+            "vit_c": 40
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": ["herbs"]
+        },
+        "next_event": null
+      }
+    ]
+  },
+
+  "event_frozen_elk": {
+    "title": "Вмёрзший сохатый",
+    "text": "На пятый день бурана вы наткнулись на вмёрзшую в лёд тушу лося. Волки не успели до неё добраться. Мясо твёрдое как камень, но внутри ещё сохранилась кровь. Отряд смотрит на тушу голодными глазами. Десятник отворачивается: он знает, что ты сейчас решишь.",
+    "weight": 40,
+    "is_unique": false,
+    "trigger_conditions": {
+      "min_day": 3
+    },
+    "choices": [
+      {
+        "choice_id": "eat_raw",
+        "text": "Пить тёплую кровь и есть сырым",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "calories": 50,
+            "vit_c": 40,
+            "morale": -30
+          },
+          "tags_add": ["drank_blood"],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": "event_frozen_elk_disgust"
+      },
+      {
+        "choice_id": "salt_meat",
+        "text": "Засолить мясо впрок (−1 соль)",
+        "conditions": {
+          "items_required": {
+            "salt": 1
+          }
+        },
+        "effects": {
+          "stats": {
+            "calories": 100,
+            "morale": 10
+          },
+          "tags_add": [],
+          "items_add": {
+            "salted_meat": 5
+          },
+          "items_remove": ["salt"]
+        },
+        "next_event": null
+      },
+      {
+        "choice_id": "leave_it",
+        "text": "Пройти мимо (грех сытости)",
+        "conditions": {},
+        "effects": {
+          "stats": {
+            "morale": -10
+          },
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      }
+    ]
+  },
+
+  "event_frozen_elk_disgust": {
+    "title": "Мерзость",
+    "text": "Вы разрываете тушу ножами. Лица людей измазаны бурой кровью. Десятник отвернулся и крестится. Голод утолён, цинга отступит на неделю — но что-то в отряде сломалось навсегда. Никто не смотрит тебе в глаза.",
+    "chain_only": true,
+    "choices": [
+      {
+        "choice_id": "continue",
+        "text": "Вытереть лицо и идти дальше",
+        "conditions": {},
+        "effects": {
+          "stats": {},
+          "tags_add": [],
+          "items_add": {},
+          "items_remove": []
+        },
+        "next_event": null
+      }
+    ]
+  }
+}

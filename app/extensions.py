@@ -15,3 +15,10 @@ from flask_sqlalchemy import SQLAlchemy
 # Единственный экземпляр SQLAlchemy на всё приложение.
 # Все модели наследуются от db.Model.
 db = SQLAlchemy()
+
+# session_options передаются в sessionmaker при создании сессии.
+# expire_on_commit=False:
+#   после db.session.commit() объекты НЕ помечаются как "просроченные",
+#   их атрибуты можно читать вне app_context (нужно для тестовых скриптов
+#   и для возврата ORM-объектов из функций).
+db = SQLAlchemy(session_options={"expire_on_commit": False})
