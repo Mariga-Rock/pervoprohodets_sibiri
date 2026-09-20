@@ -18,7 +18,63 @@ from app.constants import (
     MAX_CALORIES, MAX_VIT_C, MAX_MORALE, MAX_WARMTH,
 )
 
+def _snapshot_run(run):
+    """Слепок состояния Run ДО применения эффектов."""
+    return {
+        "calories": run.calories,
+        "vit_c": run.vit_c,
+        "morale": run.morale,
+        "warmth": run.warmth,
+        "discipline": run.discipline,
+        "squad_size": run.squad_size,
+        "inventory": dict(run.inventory),
+    }
 
+
+def _build_consequences(snap_before, run, choice_data):
+    """
+    Собирает последствия: нарратив (из JSON, если есть) + список дельт.
+
+    Дельта пишется только для того, что реально изменилось.
+    """
+    deltas = []
+
+    checks = [
+        ("calories",   "к калориям"),
+        ("vit_c",      "к витамину C"),
+        ("morale",     "к морали"),
+        ("warmth",     "к теплу"),
+        ("discipline", "к дисциплине"),
+        ("squad_size", "к отряду"),
+    ]
+    for field, label in checks:
+        before = snap_before[field]
+        after = getattr(run, field)
+        if before != after:
+            d = after - before
+            sign = "+" if d > 0 else "−"
+            deltas.append(f"{sign}{abs(d)} {label}")
+
+    # Инвентарь — что добавилось / убавилось
+    items = set(snap_before["inventory"].keys()) | set(run.inventory.keys())
+    for item in sorted(items):
+        before = snap_before["inventory"].get(item, 0)
+        after = run.inventory.get(item, 0)
+        if before != after:
+            d = after - before
+            sign = "+" if d > 0 else "−"
+            deltas.append(f"{sign}{abs(d)} {item}")
+
+    # Нарратив: если в JSON есть — используем, иначе — авто из текста кнопки
+    narrative = choice_data.get("consequences")
+    if not narrative:
+        narrative = f"Вы выбрали: {choice_data.get('text', '')}."
+
+    return {
+        "narrative": narrative,
+        "deltas": deltas,
+    }
+    
 def _apply_stats(run, stats_diff):
     """
     Применяет изменения статов с ограничителями.
@@ -150,7 +206,11 @@ def process_event_choice(run, event_id: str, choice_id: str):
         return {"status": "error", "message": err}
 
     # 5. ПРИМЕНЕНИЕ ЭФФЕКТОВ
+           # 5. ПРИМЕНЕНИЕ ЭФФЕКТОВ
     effects = choice_data.get("effects") or {}
+
+    # Снимок ДО применения — чтобы посчитать дельты
+    snap_before = _snapshot_run(run)
 
     _apply_stats(run, effects.get("stats") or {})
     _apply_tags(run, effects.get("tags_add") or [])
@@ -159,6 +219,14 @@ def process_event_choice(run, event_id: str, choice_id: str):
         effects.get("items_add") or {},
         effects.get("items_remove") or [],
     )
+
+    # Если отряд уменьшился — кто-то умер. Требуется отпевание
+    if run.squad_size < snap_before["squad_size"]:
+        if "need_funeral" not in run.tags:
+            run.tags.append("need_funeral")
+
+    # Собираем последствия
+    consequences = _build_consequences(snap_before, run, choice_data)
 
     # 6. NEXT EVENT
     next_event_id = choice_data.get("next_event")
@@ -171,8 +239,9 @@ def process_event_choice(run, event_id: str, choice_id: str):
 
     db.session.commit()
 
-    return {
+        return {
         "status": "ok",
         "next_event": next_event_id,
         "run": run,
+        "consequences": consequences,
     }

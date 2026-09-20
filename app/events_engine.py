@@ -18,7 +18,7 @@ import random
 from app.events_loader import get_daily_pool
 
 # Шанс, что день пройдёт без событий. 20% — это «воздух» между ивентами.
-QUIET_DAY_CHANCE = 0.20
+QUIET_DAY_CHANCE = 0.05
 
 
 def _check_triggers(run, triggers):

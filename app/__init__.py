@@ -349,6 +349,7 @@ def register_routes(app):
             "status": "ok",
             "next_event": result["next_event"],
             "run": serialize_run(run),
+            "consequences": result.get("consequences"),
         }), 200
             # --------------------------------------------------------
     # /api/next_turn
@@ -468,12 +469,20 @@ def register_routes(app):
                 "run": serialize_run(run),
             }), 200
 
-        # Тихий день
+        # Тихий день — редкий филлер, но и он показывает изменения
+        food_spent = run.squad_size * 2
         return jsonify({
             "status": "ok",
             "type": "quiet_day",
-            "message": "Вы прошли ещё один день. Ветер стих. "
-                       "Ничего не случилось.",
+            "message": (
+                f"День прошёл спокойно. Отряд шёл по тайге, "
+                f"не встретив ни зверя, ни человека. "
+                f"Съели {food_spent} калорий, сожгли дров."
+            ),
+            "deltas": [
+                f"−{food_spent} калорий (еда на {run.squad_size} чел.)",
+                "−3 витамина C",
+            ],
             "run": serialize_run(run),
         }), 200
         # --------------------------------------------------------

@@ -522,6 +522,28 @@ function showIdle(run) {
     clearActions();
     addButton('Идти дальше', onNextTurn);
 }
+function showConsequences(cons, onContinue) {
+    if (!cons) {
+        onContinue();
+        return;
+    }
+
+    let html = '';
+    if (cons.narrative) {
+        html += cons.narrative + '\n\n';
+    }
+    if (cons.deltas && cons.deltas.length) {
+        html += cons.deltas.map(d => '• ' + d).join('\n');
+    }
+
+    setContent('', html, false);
+    clearActions();
+
+    addButton('Что делаем дальше?', () => {
+        haptic('medium');
+        onContinue();
+    });
+}
 
 // ============================================================
 // ИДТИ ДАЛЬШЕ
@@ -556,7 +578,10 @@ async function onNextTurn() {
         haptic('medium');
         renderEvent(body.event_id, body.event_title, body.event_text, body.choices, body.run);
     } else if (body.type === 'quiet_day') {
-        setContent('Тихий день', body.message);
+        // Тихий день — но и он показывает последствия
+        const text = body.message + '\n\n' +
+            (body.deltas || []).map(d => '• ' + d).join('\n');
+        setContent('День прошёл', text, false);
         clearActions();
         addButton('Идти дальше', onNextTurn);
     } else {
@@ -611,15 +636,19 @@ async function onMakeChoice(eventId, choiceId) {
     }
 
     setStats(body.run);
+    haptic('success');
 
-    if (body.next_event) {
-        // Chain-ивент — загружаем следующий
-        await loadCurrentEvent();
-    } else {
-        // Возврат на тропу
-        haptic('success');
-        showIdle();
-    }
+    // Если есть chain-ивент — сначала показываем последствия,
+    // потом переходим в следующий ивент.
+    // Если chain-ивента нет — после последствий возвращаемся на тропу.
+
+    showConsequences(body.consequences, () => {
+        if (body.next_event) {
+            loadCurrentEvent();
+        } else {
+            showIdle(body.run);
+        }
+    });
 }
 
 // ============================================================
@@ -658,6 +687,8 @@ async function onRestart() {
 // КЛИК ПО ТЕКСТУ = МГНОВЕННО ЗАКОНЧИТЬ ПЕЧАТЬ
 // ============================================================
 document.getElementById('content').addEventListener('click', finishTyping);
+// Если игрок тапает по тексту во время печати — показать весь текст.
+// Если текст уже напечатан — ничего.
 
 // ============================================================
 // СТАРТ
