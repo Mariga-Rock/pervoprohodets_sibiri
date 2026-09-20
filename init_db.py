@@ -14,18 +14,18 @@
     НЕ запускать, если менял поля существующих таблиц — тогда нужна миграция.
 """
 
-from app import app, db
-
-# Импорт моделей — обязателен. Без него SQLAlchemy не знает, что создавать.
-from models import User, Run  # noqa: F401
+from app import create_app
+from app.extensions import db
+from app.models import User, Run  # noqa: F401
 
 
 def init_database():
+    app = create_app()
     with app.app_context():
         db.create_all()
-        print("[OK] Таблицы созданы (или уже существовали):")
-        print(f"     - users")
-        print(f"     - runs")
+        print("[OK] Таблицы созданы:")
+        print("     - users")
+        print("     - runs")
         print(f"\nБаза данных: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 
