@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Первопроходец Сибири</title>
+    <style>
+        /* === МИНИМАЛЬНЫЙ СТИЛЬ — КРАСОТА БУДЕТ НА ЭТАПЕ 9 === */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Georgia', serif;
+            background: #121212;
+            color: #e0dcd3;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        /* --- СТАТУС-БАР (верх) --- */
+        #stats-bar {
+            padding: 12px 16px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        #stats-bar span { white-space: nowrap; }
+        .stat-critical { color: #8b0000; font-weight: bold; }
+
+        /* --- ЦЕНТР: ТЕКСТ --- */
+        #content {
+            flex: 1;
+            padding: 24px 16px;
+            overflow-y: auto;
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        #title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+        #text {
+            font-size: 17px;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        /* --- НИЗ: КНОПКИ --- */
+        #actions {
+            padding: 16px;
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        button {
+            padding: 14px;
+            background: transparent;
+            border: 1px solid #333;
+            color: #e0dcd3;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: none;
+        }
+        button:hover:not(:disabled) {
+            background: #e0dcd3;
+            color: #121212;
+            border-color: #e0dcd3;
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        button.danger {
+            border-color: #8b0000;
+            color: #8b0000;
+        }
+        button.danger:hover:not(:disabled) {
+            background: #8b0000;
+            color: #e0dcd3;
+        }
+        button.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #666;
+        }
+        button.locked::before {
+            content: "🔒 ";
+        }
+
+        /* --- ЭКРАН ВВОДА ID --- */
+        #login-screen {
+            padding: 40px 16px;
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        #login-screen input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #e0dcd3;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+        #login-screen input:focus {
+            outline: none;
+            border-color: #e0dcd3;
+        }
+
+        /* --- GAME OVER --- */
+        .game-over {
+            color: #8b0000;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ЭКРАН ВВОДА ID (пока вручную) -->
+<div id="login-screen">
+    <h1>Первопроходец Сибири</h1>
+    <p style="color: #888;">Введи свой Telegram ID, чтобы начать:</p>
+    <input type="number" id="tg-input" placeholder="123456789" value="123123123">
+    <button onclick="login()">Войти</button>
+</div>
+
+<!-- ОСНОВНОЙ ЭКРАН ИГРЫ -->
+<div id="game-screen" style="display: none; flex: 1; display: none; flex-direction: column;">
+    <!-- Статус-бар -->
+    <div id="stats-bar">
+        <span id="stat-day">📅 День 1</span>
+        <span id="stat-distance">🛤 0 вёрст</span>
+        <span id="stat-calories">🍖 300</span>
+        <span id="stat-vit-c">🍋 100</span>
+        <span id="stat-morale">🔥 100</span>
+        <span id="stat-squad">👥 10</span>
+    </div>
+
+    <!-- Центр: текст -->
+    <div id="content">
+        <div id="title"></div>
+        <div id="text"></div>
+    </div>
+
+    <!-- Низ: кнопки -->
+    <div id="actions"></div>
+</div>
+
+<script>
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+let TG_ID = null;
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+async function api(path, payload) {
+    const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_id: TG_ID, ...payload }),
+    });
+    return { status: res.status, body: await res.json() };
+}
+
+function setStats(run) {
+    document.getElementById('stat-day').textContent = `📅 День ${run.day}`;
+    document.getElementById('stat-distance').textContent = `🛤 ${run.distance_covered} вёрст`;
+
+    const cal = document.getElementById('stat-calories');
+    cal.textContent = `🍖 ${run.calories}`;
+    cal.className = run.calories < 30 ? 'stat-critical' : '';
+
+    const vit = document.getElementById('stat-vit-c');
+    vit.textContent = `🍋 ${run.vit_c}`;
+    vit.className = run.vit_c < 30 ? 'stat-critical' : '';
+
+    const mor = document.getElementById('stat-morale');
+    mor.textContent = `🔥 ${run.morale}`;
+    mor.className = run.morale < 20 ? 'stat-critical' : '';
+
+    document.getElementById('stat-squad').textContent = `👥 ${run.squad_size}`;
+}
+
+function setContent(title, text) {
+    document.getElementById('title').textContent = title;
+    document.getElementById('text').textContent = text;
+}
+
+function clearActions() {
+    document.getElementById('actions').innerHTML = '';
+}
+
+function addButton(text, onclick, options = {}) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    if (options.danger) btn.classList.add('danger');
+    if (options.locked) {
+        btn.classList.add('locked');
+        btn.disabled = true;
+        btn.title = options.lockReason || 'Недоступно';
+    } else {
+        btn.onclick = onclick;
+    }
+    document.getElementById('actions').appendChild(btn);
+}
+
+// ============================================================
+// ЭКРАН 1: ВХОД
+// ============================================================
+async function login() {
+    const id = parseInt(document.getElementById('tg-input').value, 10);
+    if (!id || isNaN(id)) {
+        alert('Введи корректный ID');
+        return;
+    }
+    TG_ID = id;
+
+    // Пробуем получить состояние
+    const { body: state } = await api('/api/get_state');
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+
+    if (state.status === 'no_user' || state.status === 'no_run') {
+        // Нет активной игры — создаём
+        await startNewGame();
+    } else if (state.status === 'ok') {
+        // Есть игра — показываем её состояние
+        setStats(state.run);
+        if (state.run.current_event_id) {
+            // Игрок висит в ивенте — нужно восстановить его
+            // Пока просто покажем сообщение
+            setContent(
+                'Экспедиция',
+                'Вы находитесь в ивенте. Нажмите «Идти дальше», чтобы продолжить.'
+            );
+            clearActions();
+            addButton('Идти дальше', onNextTurn);
+        } else {
+            showIdle();
+        }
+    }
+}
+
+// ============================================================
+// ЭКРАН 2: НАЧАЛО НОВОЙ ИГРЫ
+// ============================================================
+async function startNewGame() {
+    const { body } = await api('/api/start_game');
+    if (body.status === 'created' || body.status === 'already_running') {
+        setStats(body.run);
+        showIdle();
+    } else {
+        setContent('Ошибка', JSON.stringify(body));
+    }
+}
+
+function showIdle() {
+    setContent('Экспедиция', 'Вы вышли из Тобольска. Ветер бьёт в лицо. Пора идти дальше.');
+    clearActions();
+    addButton('Идти дальше', onNextTurn);
+}
+
+// ============================================================
+// ЭКРАН 3: ИДТИ ДАЛЬШЕ
+// ============================================================
+async function onNextTurn() {
+    clearActions();
+    setContent('...', 'Идём по тайге...');
+
+    const { body } = await api('/api/next_turn');
+
+    if (body.status === 'game_over') {
+        setStats({ day: body.day, distance_covered: body.distance_covered, calories: 0, vit_c: 0, morale: 0, squad_size: 0 });
+        const content = document.getElementById('text');
+        content.innerHTML = `<div class="game-over">☠ ${body.reason}</div>Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`;
+        document.getElementById('title').textContent = 'Конец пути';
+        clearActions();
+        addButton('Начать заново', onRestart, { danger: true });
+        return;
+    }
+
+    setStats(body.run);
+
+    if (body.type === 'event') {
+        setContent(body.event_title, body.event_text);
+        clearActions();
+        body.choices.forEach(ch => {
+            const cond = ch.conditions || {};
+            const required = cond.items_required || {};
+            let locked = false;
+            let lockReason = '';
+            for (const [item, qty] of Object.entries(required)) {
+                if ((body.run.inventory[item] || 0) < qty) {
+                    locked = true;
+                    lockReason = `Нужно: ${item} × ${qty}`;
+                    break;
+                }
+            }
+            addButton(ch.text, () => onMakeChoice(body.event_id, ch.choice_id), { locked, lockReason });
+        });
+    } else if (body.type === 'quiet_day') {
+        setContent('Тихий день', body.message);
+        clearActions();
+        addButton('Идти дальше', onNextTurn);
+    } else {
+        setContent('Ошибка', JSON.stringify(body));
+        clearActions();
+        addButton('Идти дальше', onNextTurn);
+    }
+}
+
+// ============================================================
+// ЭКРАН 4: ВЫБОР В ИВЕНТЕ
+// ============================================================
+async function onMakeChoice(eventId, choiceId) {
+    clearActions();
+    setContent('...', 'Ваш выбор сделан...');
+
+    const { body } = await api('/api/make_choice', {
+        event_id: eventId,
+        choice_id: choiceId,
+    });
+
+    if (body.status === 'error') {
+        setContent('Ошибка', body.message);
+        clearActions();
+        addButton('Идти дальше', onNextTurn);
+        return;
+    }
+
+    setStats(body.run);
+
+    if (body.next_event) {
+        // Попали в следующий ивент цепочки — покажем его
+        // Проще всего: следующий next_turn выкинет нас сюда же,
+        // но мы не знаем текст. Поэтому перезагрузим состояние через get_state.
+        await loadCurrentEvent();
+    } else {
+        // Возврат на тропу
+        showIdle();
+    }
+}
+
+// ============================================================
+// ЗАГРУЗКА ТЕКУЩЕГО ИВЕНТА (для восстановления сессии)
+// ============================================================
+async function loadCurrentEvent() {
+    const { body } = await api('/api/get_state');
+    if (body.status !== 'ok' || !body.run.current_event_id) {
+        showIdle();
+        return;
+    }
+
+    // Загружаем данные ивента через прямой запрос
+    // Пока сделаем простой трюк: попробуем next_turn — он выдаст ошибку,
+    // потому что мы в ивенте. Проще временно перейти на «тихий день».
+    // ПРАВИЛЬНО: добавим отдельный маршрут /api/get_event. Но пока — упростим.
+    setContent(
+        'Ивент продолжается',
+        'Вы в середине ивента. Нажмите «Идти дальше», чтобы обновить.'
+    );
+    clearActions();
+    addButton('Идти дальше', onNextTurn);
+}
+
+// ============================================================
+// РЕСТАРТ ПОСЛЕ СМЕРТИ
+// ============================================================
+async function onRestart() {
+    await startNewGame();
+}
+
+// ============================================================
+// АВТОСТАРТ — если ID уже введён (для отладки)
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+    // Ничего не делаем автоматически, ждём нажатия «Войти»
+});
+</script>
+
+</body>
+</html>
