@@ -50,6 +50,8 @@ class Run(db.Model):
     vit_c = db.Column(db.Integer, default=DEFAULT_VIT_C)
     morale = db.Column(db.Integer, default=DEFAULT_MORALE)
     warmth = db.Column(db.Integer, default=DEFAULT_WARMTH)
+        # Сколько бойцов не могут идти (раненые, обмороженные, больные).
+    wounded = db.Column(db.Integer, default=0)
 
     squad_size = db.Column(db.Integer, default=DEFAULT_SQUAD_SIZE)
 
@@ -71,3 +73,5 @@ class Run(db.Model):
     discipline = db.Column(db.Integer, default=70)
         # Есть ли в отряде священник. По умолчанию — да (с Ермаком шли 3 священника).
     has_priest = db.Column(db.Boolean, default=True)
+        # Последние 5 событий — чтобы не повторялись
+    recent_events = db.Column(db.JSON, default=list)

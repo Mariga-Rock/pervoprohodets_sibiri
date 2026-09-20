@@ -5,328 +5,145 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
     <title>Первопроходец Сибири</title>
-
-    <!-- Telegram Web App SDK -->
     <script src="/static/js/telegram-web-app.js"></script>
-
     <style>
-        /* ============================================
-           ПАЛИТРА «САЖА И СНЕГ»
-           ============================================ */
         :root {
-            --bg: #121212;              /* пепельно-чёрный */
-            --bg-panel: #1a1a1a;        /* чуть светлее для панелей */
-            --text: #e0dcd3;            /* старая кость */
-            --text-dim: #8a8a8a;        /* тускло-серый */
-            --border: #333333;          /* тёмно-серый */
-            --danger: #8b0000;          /* запёкшаяся кровь */
+            --bg: #121212;
+            --bg-panel: #1a1a1a;
+            --text: #e0dcd3;
+            --text-dim: #8a8a8a;
+            --border: #333333;
+            --danger: #8b0000;
         }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            background: var(--bg);
-            color: var(--text);
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            background: var(--bg); color: var(--text);
             font-family: Georgia, 'Times New Roman', serif;
-            font-size: 16px;
-            line-height: 1.6;
-            /* Принудительная тёмная тема — не реагируем на настройки ОС */
-            color-scheme: dark;
+            font-size: 16px; line-height: 1.6; color-scheme: dark;
         }
+        body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-        /* ============================================
-           АРХИТЕКТУРА: 3 ЗОНЫ
-           ============================================ */
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-
-        /* --- ЗОНА 1: СТАТУС-БАР (верх, ~15%) --- */
         #stats-bar {
-            flex: 0 0 auto;
-            padding: 10px 14px;
-            background: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
-            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            font-size: 13px;
-            display: flex;
-            gap: 12px 16px;
-            flex-wrap: wrap;
-            align-items: center;
+            flex: 0 0 auto; padding: 8px 10px;
+            background: var(--bg-panel); border-bottom: 1px solid var(--border);
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
         }
-
         #stats-bar .stat {
-            white-space: nowrap;
-            color: var(--text-dim);
-            transition: color 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 5px 2px; background: #0e0e0e; border: 1px solid #222;
+            font-size: 15px; font-weight: 500; color: var(--text);
+            text-align: center; line-height: 1.15; min-height: 46px;
         }
-
-        #stats-bar .stat.critical {
-            color: var(--danger);
-            font-weight: 600;
+        #stats-bar .stat.critical { color: var(--danger); border-color: var(--danger); animation: pulse-danger 1.6s ease-in-out infinite; }
+        @keyframes pulse-danger { 0%,100% { background: #0e0e0e; } 50% { background: #1f0505; } }
+        #stats-bar .stat .label {
+            font-size: 9px; color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 0.05em; margin-bottom: 2px;
         }
+        #stats-bar .stat .value { font-size: 15px; font-weight: 600; }
 
-        /* --- ЗОНА 2: ТЕКСТ (центр, ~60%) --- */
         #content {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            padding: 22px 18px;
-            max-width: 720px;
-            width: 100%;
-            margin: 0 auto;
+            flex: 1 1 auto; overflow-y: auto; padding: 20px 16px;
+            max-width: 720px; width: 100%; margin: 0 auto;
             -webkit-overflow-scrolling: touch;
         }
-
-        #title {
-            font-size: 19px;
-            font-weight: 700;
-            margin: 0 0 14px 0;
-            color: var(--text);
-            letter-spacing: 0.02em;
-        }
-
-        #text {
-            font-size: 17px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
+        #title { font-size: 19px; font-weight: 700; margin: 0 0 12px 0; color: var(--text); letter-spacing: 0.02em; }
+        #title:empty { display: none; }
+        #text { font-size: 17px; white-space: pre-wrap; word-wrap: break-word; }
         #text.typing::after {
-            content: '▌';
-            color: var(--danger);
-            animation: blink 0.8s step-end infinite;
-            font-weight: 100;
+            content: '▌'; color: var(--danger);
+            animation: blink 0.8s step-end infinite; font-weight: 100;
         }
+        @keyframes blink { 50% { opacity: 0; } }
+        .game-over { color: var(--danger); font-weight: 700; font-size: 20px; margin-bottom: 14px; letter-spacing: 0.04em; }
 
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        .game-over {
-            color: var(--danger);
-            font-weight: 700;
-            font-size: 20px;
-            margin-bottom: 14px;
-            letter-spacing: 0.04em;
-        }
-
-        /* --- ЗОНА 3: КНОПКИ (низ, ~25%, sticky) --- */
         #actions {
             flex: 0 0 auto;
-            padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0));
-            background: var(--bg-panel);
-            border-top: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-width: 720px;
-            width: 100%;
-            margin: 0 auto;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0));
+            background: var(--bg-panel); border-top: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 7px;
+            max-width: 720px; width: 100%; margin: 0 auto;
         }
-
-        /* ============================================
-           КНОПКИ: РЕЗКИЙ КОНТРАСТ, БЕЗ АНИМАЦИЙ
-           ============================================ */
         button {
-            padding: 13px 16px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            font-size: 15px;
-            font-weight: 400;
-            cursor: pointer;
-            text-align: center;
-            /* Никаких плавных переходов — щелчок */
-            transition: none;
-            user-select: none;
-            -webkit-user-select: none;
-            min-height: 46px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 12px 14px; background: transparent; border: 1px solid var(--border);
+            color: var(--text); font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-size: 15px; cursor: pointer; text-align: center; transition: none;
+            user-select: none; -webkit-user-select: none; min-height: 44px;
+            display: flex; align-items: center; justify-content: center;
         }
+        button:active:not(:disabled) { background: var(--text); color: var(--bg); border-color: var(--text); }
+        button:disabled, button.locked { opacity: 0.35; cursor: not-allowed; color: var(--text-dim); border-color: #222; }
+        button.locked::before { content: "🔒 "; margin-right: 4px; opacity: 0.7; }
+        button.danger { border-color: var(--danger); color: var(--danger); }
+        button.danger:active:not(:disabled) { background: var(--danger); color: var(--text); border-color: var(--danger); }
 
-        button:active:not(:disabled) {
-            background: var(--text);
-            color: var(--bg);
-            border-color: var(--text);
-        }
-
-        button:disabled,
-        button.locked {
-            opacity: 0.35;
-            cursor: not-allowed;
-            color: var(--text-dim);
-            border-color: #222;
-        }
-
-        button.locked::before {
-            content: "🔒 ";
-            margin-right: 4px;
-            opacity: 0.7;
-        }
-
-        button.danger {
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-
-        button.danger:active:not(:disabled) {
-            background: var(--danger);
-            color: var(--text);
-            border-color: var(--danger);
-        }
-
-        /* ============================================
-           ЭКРАН ВХОДА
-           ============================================ */
-        #login-screen {
-            flex: 1;
-            padding: 40px 24px;
-            max-width: 420px;
-            margin: 0 auto;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        #login-screen h1 {
-            font-family: Georgia, serif;
-            font-size: 26px;
-            font-weight: 700;
-            margin: 0 0 8px 0;
-            letter-spacing: 0.02em;
-        }
-
-        #login-screen p {
-            color: var(--text-dim);
-            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            font-size: 14px;
-            margin: 0 0 24px 0;
-        }
-
+        #login-screen { flex: 1; padding: 40px 24px; max-width: 420px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; justify-content: center; }
+        #login-screen h1 { font-family: Georgia, serif; font-size: 26px; font-weight: 700; margin: 0 0 8px 0; }
+        #login-screen p { color: var(--text-dim); font-family: -apple-system, sans-serif; font-size: 14px; margin: 0 0 24px 0; }
         #login-screen input {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            color: var(--text);
-            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            font-size: 16px;
-            margin-bottom: 14px;
-            border-radius: 0;
+            width: 100%; padding: 12px 14px; background: var(--bg-panel);
+            border: 1px solid var(--border); color: var(--text);
+            font-family: -apple-system, sans-serif; font-size: 16px;
+            margin-bottom: 14px; border-radius: 0;
         }
-
-        #login-screen input:focus {
-            outline: none;
-            border-color: var(--text);
-        }
-
-        /* ============================================
-           СКРОЛЛБАР (тонкий, тёмный)
-           ============================================ */
-        #content::-webkit-scrollbar {
-            width: 4px;
-        }
-        #content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        #content::-webkit-scrollbar-thumb {
-            background: #2a2a2a;
-        }
+        #login-screen input:focus { outline: none; border-color: var(--text); }
+        #content::-webkit-scrollbar { width: 4px; }
+        #content::-webkit-scrollbar-track { background: transparent; }
+        #content::-webkit-scrollbar-thumb { background: #2a2a2a; }
     </style>
 </head>
 <body>
 
-<!-- ЭКРАН ВВОДА ID (для отладки в браузере) -->
 <div id="login-screen" style="display: none;">
     <h1>Первопроходец Сибири</h1>
-    <p>Введи Telegram ID, чтобы начать:</p>
+    <p>Введи Telegram ID:</p>
     <input type="number" id="tg-input" placeholder="123456789" value="123123123">
     <button onclick="login()">Войти</button>
 </div>
 
-<!-- ОСНОВНОЙ ЭКРАН ИГРЫ -->
 <div id="game-screen" style="display: none; flex: 1; flex-direction: column; min-height: 0;">
     <div id="stats-bar">
-        <span class="stat" id="stat-day">📅 День 1</span>
-        <span class="stat" id="stat-distance">🛤 0 вёрст</span>
-        <span class="stat" id="stat-calories">🍖 300</span>
-        <span class="stat" id="stat-vit-c">🍋 100</span>
-        <span class="stat" id="stat-morale">🔥 100</span>
-        <span class="stat" id="stat-squad">👥 10</span>
-        <span class="stat" id="stat-wood">🪵 0</span>
-        <span class="stat" id="stat-herbs">🌿 0</span>
-        <span class="stat" id="stat-salt">🧂 0</span>
+        <div class="stat" id="stat-day"><div class="label">День</div><div class="value">1</div></div>
+        <div class="stat" id="stat-distance"><div class="label">Вёрсты</div><div class="value">0</div></div>
+        <div class="stat" id="stat-calories"><div class="label">Еда</div><div class="value">300</div></div>
+        <div class="stat" id="stat-vit-c"><div class="label">Витамин</div><div class="value">100</div></div>
+        <div class="stat" id="stat-morale"><div class="label">Мораль</div><div class="value">100</div></div>
+        <div class="stat" id="stat-discipline"><div class="label">Дисципл.</div><div class="value">70</div></div>
+        <div class="stat" id="stat-squad"><div class="label">Отряд</div><div class="value">10</div></div>
+        <div class="stat" id="stat-wood"><div class="label">Дрова</div><div class="value">0</div></div>
+        <div class="stat" id="stat-herbs"><div class="label">Травы</div><div class="value">0</div></div>
+        <div class="stat" id="stat-salt"><div class="label">Соль</div><div class="value">0</div></div>
+        <div class="stat" id="stat-wounded"><div class="label">Ранено</div><div class="value">0</div></div>
     </div>
-    <div id="content">
-        <div id="title"></div>
-        <div id="text"></div>
-    </div>
-
+    <div id="content"><div id="title"></div><div id="text"></div></div>
     <div id="actions"></div>
 </div>
 
 <script>
-// ============================================================
-// TELEGRAM WEB APP
-// ============================================================
 const tg = window.Telegram?.WebApp;
-
-if (tg) {
-    tg.ready();
-    tg.expand();
-    // Скрываем кнопку "Назад" в Telegram (не нужна в игре)
-    if (tg.BackButton) tg.BackButton.hide();
-    // Отключаем вертикальный свайп для закрытия
-    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-}
+if (tg) { tg.ready(); tg.expand(); if (tg.BackButton) tg.BackButton.hide(); if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); }
 
 function haptic(type) {
-    // Типы: 'light', 'medium', 'heavy', 'error', 'success'
     if (!tg?.HapticFeedback) return;
     try {
-        if (type === 'error' || type === 'success') {
-            tg.HapticFeedback.notificationOccurred(type);
-        } else {
-            tg.HapticFeedback.impactOccurred(type);
-        }
-    } catch (e) { /* ignore */ }
+        if (type === 'error' || type === 'success') tg.HapticFeedback.notificationOccurred(type);
+        else tg.HapticFeedback.impactOccurred(type);
+    } catch (e) {}
 }
 
 function getTelegramId() {
     const id = tg?.initDataUnsafe?.user?.id;
     if (id) return id;
     const saved = localStorage.getItem('tg_id');
-    if (saved) return parseInt(saved, 10);
-    return null;
+    return saved ? parseInt(saved, 10) : null;
 }
+function getTelegramUsername() { return tg?.initDataUnsafe?.user?.username || null; }
 
-function getTelegramUsername() {
-    return tg?.initDataUnsafe?.user?.username || null;
-}
-
-// ============================================================
-// СОСТОЯНИЕ
-// ============================================================
 let TG_ID = null;
 let typewriterTimer = null;
 
-// ============================================================
-// API
-// ============================================================
 async function api(path, payload = {}) {
     const res = await fetch(path, {
         method: 'POST',
@@ -336,27 +153,15 @@ async function api(path, payload = {}) {
     return { status: res.status, body: await res.json() };
 }
 
-// ============================================================
-// ПЕЧАТНАЯ МАШИНКА
-// ============================================================
 function typeWriter(element, text, speed = 25) {
-    // Отменяем предыдущую печать, если была
-    if (typewriterTimer) {
-        clearInterval(typewriterTimer);
-        typewriterTimer = null;
-    }
-
+    if (typewriterTimer) { clearInterval(typewriterTimer); typewriterTimer = null; }
     element.textContent = '';
     element.classList.add('typing');
-
     let i = 0;
     typewriterTimer = setInterval(() => {
-        // Каждые 3 буквы — лёгкая вибрация (для атмосферы)
-        if (i % 3 === 0) haptic('light');
-
+        if (i % 5 === 0) haptic('light');
         element.textContent += text[i];
         i++;
-
         if (i >= text.length) {
             clearInterval(typewriterTimer);
             typewriterTimer = null;
@@ -364,9 +169,7 @@ function typeWriter(element, text, speed = 25) {
         }
     }, speed);
 }
-
 function finishTyping() {
-    // Мгновенно закончить печать — по клику на текст
     if (typewriterTimer) {
         clearInterval(typewriterTimer);
         typewriterTimer = null;
@@ -374,68 +177,59 @@ function finishTyping() {
     }
 }
 
-// ============================================================
-// UI
-// ============================================================
-function setStats(run) {
-    setStat('stat-day',      `📅 День ${run.day}`,                false);
-    setStat('stat-distance', `🛤 ${run.distance_covered} вёрст`,  false);
-    setStat('stat-calories', `🍖 ${run.calories}`,  run.calories < 30);
-    setStat('stat-vit-c',    `🍋 ${run.vit_c}`,     run.vit_c    < 30);
-    setStat('stat-morale',   `🔥 ${run.morale}`,    run.morale   < 20);
-    setStat('stat-squad',    `👥 ${run.squad_size}`, run.squad_size < 3);
-    setStat('stat-wood',     `🪵 ${run.inventory?.wood  || 0}`, false);
-    setStat('stat-herbs',    `🌿 ${run.inventory?.herbs || 0}`, false);
-    setStat('stat-salt',     `🧂 ${run.inventory?.salt  || 0}`, false);
-}
-
 function setStat(id, value, critical) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.textContent = value;
-    if (critical) {
-        el.classList.add('critical');
-    } else {
-        el.classList.remove('critical');
-    }
+    const valEl = el.querySelector('.value');
+    if (!valEl) return;
+    valEl.textContent = value;
+    if (critical) el.classList.add('critical'); else el.classList.remove('critical');
+}
+
+function setStats(run) {
+    setStat('stat-day',        run.day,               false);
+    setStat('stat-distance',   run.distance_covered,  false);
+    setStat('stat-calories',   run.calories,  run.calories < 30);
+    setStat('stat-vit-c',      run.vit_c,     run.vit_c    < 30);
+    setStat('stat-morale',     run.morale,    run.morale   < 20);
+    setStat('stat-discipline', run.discipline, run.discipline < 30);
+    setStat('stat-squad',      run.squad_size, run.squad_size < 3);
+    setStat('stat-wood',       run.inventory?.wood  || 0, false);
+    setStat('stat-herbs',      run.inventory?.herbs || 0, false);
+    setStat('stat-salt',       run.inventory?.salt  || 0, false);
+    setStat('stat-wounded', run.wounded || 0, (run.wounded || 0) > 0);
 }
 
 function setContent(title, text, useTypewriter = true) {
-    document.getElementById('title').textContent = title;
-
+    document.getElementById('title').textContent = title || '';
     const textEl = document.getElementById('text');
     if (useTypewriter && text && text.length > 0) {
         typeWriter(textEl, text, 25);
     } else {
-        if (typewriterTimer) {
-            clearInterval(typewriterTimer);
-            typewriterTimer = null;
-        }
-        textEl.textContent = text;
+        if (typewriterTimer) { clearInterval(typewriterTimer); typewriterTimer = null; }
+        textEl.textContent = text || '';
         textEl.classList.remove('typing');
     }
-
-    // Прокручиваем контент вверх при новом тексте
+    document.getElementById('content').scrollTop = 0;
+}
+function setHtml(title, html) {
+    if (typewriterTimer) { clearInterval(typewriterTimer); typewriterTimer = null; }
+    document.getElementById('title').textContent = title || '';
+    document.getElementById('text').innerHTML = html;
     document.getElementById('content').scrollTop = 0;
 }
 
-function clearActions() {
-    document.getElementById('actions').innerHTML = '';
-}
+function clearActions() { document.getElementById('actions').innerHTML = ''; }
 
 function addButton(text, onclick, options = {}) {
     const btn = document.createElement('button');
     btn.textContent = text;
     if (options.danger) btn.classList.add('danger');
     if (options.locked) {
-        btn.classList.add('locked');
-        btn.disabled = true;
+        btn.classList.add('locked'); btn.disabled = true;
         btn.title = options.lockReason || 'Недоступно';
     } else {
-        btn.onclick = () => {
-            haptic('medium');
-            onclick();
-        };
+        btn.onclick = () => { haptic('medium'); onclick(); };
     }
     document.getElementById('actions').appendChild(btn);
 }
@@ -443,32 +237,28 @@ function addButton(text, onclick, options = {}) {
 function showScreen(name) {
     const login = document.getElementById('login-screen');
     const game = document.getElementById('game-screen');
-
-    if (name === 'login') {
-        login.style.display = 'flex';
-        game.style.display = 'none';
-    } else {
-        login.style.display = 'none';
-        game.style.display = 'flex';
-    }
+    if (name === 'login') { login.style.display = 'flex'; game.style.display = 'none'; }
+    else { login.style.display = 'none'; game.style.display = 'flex'; }
 }
 
-// ============================================================
-// ЗАПУСК
-// ============================================================
+// МЕНЮ ДЕЙСТВИЙ — единое для всех экранов
+function addActionMenu() {
+    addButton('Идти дальше', onNextTurn);
+    addButton('Заготовить дрова', () => onDoAction('wood'));
+    addButton('Охота', () => onDoAction('hunt'));
+    addButton('Рыбалка', () => onDoAction('fish'));
+    addButton('Собрать травы', () => onDoAction('herbs'));
+    addButton('Хвойный отвар', () => onDoAction('pine'));
+    addButton('Отдых у костра', () => onDoAction('rest'));
+}
+
 async function boot() {
     TG_ID = getTelegramId();
-
-    if (!TG_ID) {
-        showScreen('login');
-        return;
-    }
-
+    if (!TG_ID) { showScreen('login'); return; }
     localStorage.setItem('tg_id', TG_ID);
     showScreen('game');
 
     const { body: state } = await api('/api/get_state');
-
     if (state.status === 'no_user' || state.status === 'no_run') {
         await startNewGame();
     } else if (state.status === 'ok') {
@@ -476,96 +266,64 @@ async function boot() {
         if (state.run.current_event_id) {
             await loadCurrentEvent();
         } else {
-            showIdle();
+            showIdle(state.run);
         }
     }
 }
 
 async function login() {
     const id = parseInt(document.getElementById('tg-input').value, 10);
-    if (!id || isNaN(id)) {
-        haptic('error');
-        return;
-    }
+    if (!id || isNaN(id)) { haptic('error'); return; }
     haptic('medium');
     TG_ID = id;
     localStorage.setItem('tg_id', TG_ID);
     await boot();
 }
 
-// ============================================================
-// НОВАЯ ИГРА
-// ============================================================
 async function startNewGame() {
-    const { body } = await api('/api/start_game', {
-        username: getTelegramUsername(),
-    });
-
+    const { body } = await api('/api/start_game', { username: getTelegramUsername() });
     if (body.status === 'created' || body.status === 'already_running') {
         setStats(body.run);
-        showIdle();
+        showIdle(body.run);
     } else {
         setContent('Ошибка', JSON.stringify(body), false);
     }
 }
 
 function showIdle(run) {
-    // Если это самая первая остановка — показываем вступление.
-    // День 1 и 0 вёрст = игрок ещё не сделал ни одного хода.
     const isFirstStop = run && run.day === 1 && run.distance_covered === 0;
-
-    const text = isFirstStop
-        ? 'Вы вышли из Нижнего Чусовского Городка. Строгановы дали вам лодки, соль и хлеб. Позади — Кама, впереди — Камень. Ветер бьёт в лицо с реки Чусовой. Пора идти за Урал.'
-        : 'Идём по тайге. Снег скрипит под сапогами. Пора идти дальше.';
-
-    setContent('Экспедиция', text);
+    if (isFirstStop) {
+        setContent('Экспедиция',
+            'Вы вышли из Нижнего Чусовского Городка. Строгановы дали вам лодки, соль и хлеб. Позади — Кама, впереди — Камень. Пора идти за Урал.');
+    } else {
+        setContent('', 'Что делаем сегодня?', false);
+    }
     clearActions();
-    addButton('Идти дальше', onNextTurn);
-}
-function showConsequences(cons, onContinue) {
-    if (!cons) {
-        onContinue();
-        return;
-    }
-
-    let html = '';
-    if (cons.narrative) {
-        html += cons.narrative + '\n\n';
-    }
-    if (cons.deltas && cons.deltas.length) {
-        html += cons.deltas.map(d => '• ' + d).join('\n');
-    }
-
-    setContent('', html, false);
-    clearActions();
-
-    addButton('Что делаем дальше?', () => {
-        haptic('medium');
-        onContinue();
-    });
+    addActionMenu();
 }
 
-// ============================================================
-// ИДТИ ДАЛЬШЕ
-// ============================================================
 async function onNextTurn() {
     haptic('light');
     clearActions();
-    setContent('...', 'Идём по тайге...', false);
+    setContent('', '...', false);
 
     const { body } = await api('/api/next_turn');
 
     if (body.status === 'game_over') {
         haptic('error');
-        setStats({
-            day: body.day, distance_covered: body.distance_covered,
-            calories: 0, vit_c: 0, morale: 0, squad_size: 0,
-        });
-        const text = `Вы прошли ${body.distance_covered} вёрст ` +
-                     `и погибли на ${body.day}-й день.`;
-        document.getElementById('title').textContent = 'Конец пути';
-        const textEl = document.getElementById('text');
-        textEl.innerHTML = `<div class="game-over">☠ ${body.reason}</div>${text}`;
+        setStats({ day: body.day, distance_covered: body.distance_covered, calories: 0, vit_c: 0, morale: 0, discipline: 0, squad_size: 0 });
+        setHtml('Конец пути',
+            `<div class="game-over">☠ ${body.reason}</div>Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`);
+        clearActions();
+        addButton('Начать заново', onRestart, { danger: true });
+        return;
+    }
+    if (body.status === 'victory') {
+        haptic('success');
+        setStats({ day: body.day, distance_covered: body.distance_covered, calories: 0, vit_c: 0, morale: 0, discipline: 0, squad_size: 0 });
+        setHtml('Мангазея',
+            `<div style="color:#e0dcd3; font-weight:700; font-size:20px; margin-bottom:14px;">✦ МАНГАЗЕЯ ✦</div>` +
+            `Вы дошли. ${body.day} дней, ${body.distance_covered} вёрст. Сибирь открыта.`);
         clearActions();
         addButton('Начать заново', onRestart, { danger: true });
         return;
@@ -574,127 +332,140 @@ async function onNextTurn() {
     setStats(body.run);
 
     if (body.type === 'event') {
-        // Ивент — это «событие», лёгкая вибрация
         haptic('medium');
         renderEvent(body.event_id, body.event_title, body.event_text, body.choices, body.run);
     } else if (body.type === 'quiet_day') {
-        // Тихий день — но и он показывает последствия
-        const text = body.message + '\n\n' +
-            (body.deltas || []).map(d => '• ' + d).join('\n');
-        setContent('День прошёл', text, false);
+        let text = body.message || '';
+        if (body.deltas && body.deltas.length) text += '\n\n' + body.deltas.map(d => '• ' + d).join('\n');
+        setContent('', text, false);
         clearActions();
-        addButton('Идти дальше', onNextTurn);
+        addActionMenu();
     } else {
         setContent('Ошибка', JSON.stringify(body), false);
         clearActions();
-        addButton('Идти дальше', onNextTurn);
+        addActionMenu();
     }
 }
 
 function renderEvent(eventId, title, text, choices, run) {
     setContent(title, text);
     clearActions();
-
     choices.forEach(ch => {
         const cond = ch.conditions || {};
         const required = cond.items_required || {};
-        let locked = false;
-        let lockReason = '';
+        let locked = false, lockReason = '';
         for (const [item, qty] of Object.entries(required)) {
             if ((run.inventory[item] || 0) < qty) {
-                locked = true;
-                lockReason = `Нужно: ${item} × ${qty}`;
+                locked = true; lockReason = `Нужно: ${item} × ${qty}`;
                 break;
             }
         }
-        addButton(
-            ch.text,
-            () => onMakeChoice(eventId, ch.choice_id),
-            { locked, lockReason }
-        );
+        addButton(ch.text, () => onMakeChoice(eventId, ch.choice_id), { locked, lockReason });
     });
 }
 
-// ============================================================
-// ВЫБОР В ИВЕНТЕ
-// ============================================================
 async function onMakeChoice(eventId, choiceId) {
     clearActions();
-    setContent('...', 'Ваш выбор сделан...', false);
+    setContent('', '...', false);
 
-    const { body } = await api('/api/make_choice', {
-        event_id: eventId,
-        choice_id: choiceId,
-    });
+    const { body } = await api('/api/make_choice', { event_id: eventId, choice_id: choiceId });
 
     if (body.status === 'error') {
         haptic('error');
         setContent('Ошибка', body.message, false);
         clearActions();
-        addButton('Идти дальше', onNextTurn);
+        addActionMenu();
         return;
     }
-
     setStats(body.run);
     haptic('success');
 
-    // Если есть chain-ивент — сначала показываем последствия,
-    // потом переходим в следующий ивент.
-    // Если chain-ивента нет — после последствий возвращаемся на тропу.
-
-    showConsequences(body.consequences, () => {
-        if (body.next_event) {
-            loadCurrentEvent();
-        } else {
-            showIdle(body.run);
+    let preamble = '';
+    if (body.consequences) {
+        if (body.consequences.narrative) preamble += body.consequences.narrative;
+        if (body.consequences.deltas && body.consequences.deltas.length) {
+            if (preamble) preamble += '\n\n';
+            preamble += body.consequences.deltas.map(d => '• ' + d).join('\n');
         }
-    });
+    }
+
+    if (body.next_event) {
+        const { body: state } = await api('/api/get_state');
+        const nextId = state.run.current_event_id;
+        const { body: ev } = await api('/api/get_event', { event_id: nextId });
+        const fullText = preamble ? preamble + '\n\n———\n\n' + ev.event_text : ev.event_text;
+        setContent(ev.event_title, fullText, false);
+        clearActions();
+        ev.choices.forEach(ch => {
+            const cond = ch.conditions || {};
+            const required = cond.items_required || {};
+            let locked = false, lockReason = '';
+            for (const [item, qty] of Object.entries(required)) {
+                if ((state.run.inventory[item] || 0) < qty) {
+                    locked = true; lockReason = `Нужно: ${item} × ${qty}`;
+                    break;
+                }
+            }
+            addButton(ch.text, () => onMakeChoice(ev.event_id, ch.choice_id), { locked, lockReason });
+        });
+        return;
+    }
+
+    setContent('', preamble, false);
+    clearActions();
+    addActionMenu();
 }
 
-// ============================================================
-// ЗАГРУЗКА ТЕКУЩЕГО ИВЕНТА
-// ============================================================
+async function onDoAction(actionType) {
+    clearActions();
+    setContent('', '...', false);
+
+    const { body } = await api('/api/do_action', { action_type: actionType });
+
+    if (body.status === 'game_over') {
+        haptic('error');
+        setStats({ day: body.day, distance_covered: body.distance_covered, calories: 0, vit_c: 0, morale: 0, discipline: 0, squad_size: 0 });
+        setHtml('Конец пути',
+            `<div class="game-over">☠ ${body.reason}</div>Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`);
+        clearActions();
+        addButton('Начать заново', onRestart, { danger: true });
+        return;
+    }
+    if (body.status === 'error') {
+        setContent('Ошибка', body.message, false);
+        showIdle(body.run);
+        return;
+    }
+
+    haptic('success');
+    setStats(body.run);
+
+    let text = body.narrative || '';
+    if (body.deltas && body.deltas.length) text += '\n\n' + body.deltas.map(d => '• ' + d).join('\n');
+    setContent('', text, false);
+    clearActions();
+    addActionMenu();
+}
+
 async function loadCurrentEvent() {
     const { body: state } = await api('/api/get_state');
-    if (state.status !== 'ok' || !state.run.current_event_id) {
-        showIdle();
-        return;
-    }
-
+    if (state.status !== 'ok' || !state.run.current_event_id) { showIdle(state.run); return; }
     const eventId = state.run.current_event_id;
     setStats(state.run);
-
     const { body: ev } = await api('/api/get_event', { event_id: eventId });
-
     if (ev.status !== 'ok') {
-        setContent('Ошибка загрузки ивента', ev.message || JSON.stringify(ev), false);
+        setContent('Ошибка', ev.message || JSON.stringify(ev), false);
         clearActions();
-        addButton('Идти дальше', onNextTurn);
+        addActionMenu();
         return;
     }
-
     renderEvent(ev.event_id, ev.event_title, ev.event_text, ev.choices, state.run);
 }
 
-// ============================================================
-// РЕСТАРТ
-// ============================================================
-async function onRestart() {
-    await startNewGame();
-}
+async function onRestart() { await startNewGame(); }
 
-// ============================================================
-// КЛИК ПО ТЕКСТУ = МГНОВЕННО ЗАКОНЧИТЬ ПЕЧАТЬ
-// ============================================================
 document.getElementById('content').addEventListener('click', finishTyping);
-// Если игрок тапает по тексту во время печати — показать весь текст.
-// Если текст уже напечатан — ничего.
-
-// ============================================================
-// СТАРТ
-// ============================================================
 window.addEventListener('DOMContentLoaded', boot);
 </script>
-
 </body>
 </html>
