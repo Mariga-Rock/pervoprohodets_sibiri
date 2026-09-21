@@ -20,7 +20,19 @@ EVENTS_PATH = Path(__file__).resolve().parent.parent / "data" / "events.json"
 
 # Какие статы мы умеем обрабатывать.
 # Если JSON содержит что-то другое — ошибка.
-VALID_STAT_KEYS = {"calories", "vit_c", "morale", "warmth", "discipline", "squad_size"}
+VALID_STAT_KEYS = {
+    # Статы (числа)
+    "vit_c", "morale", "warmth", "discipline",
+    # Продукты
+    "flour", "fish", "meat", "cranberries",
+    # Экономика
+    "money", "charters",
+    # Бойцы
+    "endurance",
+    # Особые флаги (обрабатываются отдельно в _apply_stats)
+    "cure_scurvy",
+    "squad_size",   # устарело, но оставлено для совместимости
+}
 
 
 def validate():
