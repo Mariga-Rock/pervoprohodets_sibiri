@@ -21,22 +21,24 @@
             margin: 0; padding: 0; height: 100%; overflow: hidden;
             background: var(--bg); color: var(--text);
             font-family: Georgia, 'Times New Roman', serif;
-            font-size: 16px; line-height: 1.6; color-scheme: dark;
+            font-size: 16px; line-height: 1.5; color-scheme: dark;
         }
         body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-        /* --- СТАТУС-БАР --- */
+        /* ============================================================
+           СТАТУС-БАР — 12 плиток, 6 колонок, компактно
+           ============================================================ */
         #stats-bar {
-            flex: 0 0 auto; padding: 6px 8px;
+            flex: 0 0 auto; padding: 4px 6px;
             background: var(--bg-panel); border-bottom: 1px solid var(--border);
             font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px;
         }
         #stats-bar .stat {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 4px 2px; background: #0e0e0e; border: 1px solid #222;
-            font-size: 14px; font-weight: 500; color: var(--text);
-            text-align: center; line-height: 1.1; min-height: 42px;
+            padding: 3px 1px; background: #0e0e0e; border: 1px solid #222;
+            font-weight: 500; color: var(--text);
+            text-align: center; line-height: 1.05; min-height: 36px;
         }
         #stats-bar .stat.critical {
             color: var(--danger); border-color: var(--danger);
@@ -47,55 +49,72 @@
             50% { background: #1f0505; }
         }
         #stats-bar .stat .label {
-            font-size: 9px; color: var(--text-dim); text-transform: uppercase;
-            letter-spacing: 0.04em; margin-bottom: 1px;
+            font-size: 8px; color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
-        #stats-bar .stat .value { font-size: 15px; font-weight: 600; }
+        #stats-bar .stat .value { font-size: 13px; font-weight: 600; }
 
-        /* --- КОНТЕНТ --- */
+        /* ============================================================
+           КОНТЕНТ
+           ============================================================ */
         #content {
-            flex: 1 1 auto; overflow-y: auto; padding: 18px 14px;
+            flex: 1 1 auto; overflow-y: auto; padding: 14px 12px;
             max-width: 720px; width: 100%; margin: 0 auto;
             -webkit-overflow-scrolling: touch;
         }
-        #title { font-size: 19px; font-weight: 700; margin: 0 0 12px 0; letter-spacing: 0.02em; }
+        #title {
+            font-size: 17px; font-weight: 700; margin: 0 0 10px 0;
+            letter-spacing: 0.02em;
+        }
         #title:empty { display: none; }
-        #text { font-size: 17px; white-space: pre-wrap; word-wrap: break-word; }
+        #text {
+            font-size: 15.5px; white-space: pre-wrap;
+            word-wrap: break-word; line-height: 1.55;
+        }
         #text.typing::after {
             content: '▌'; color: var(--danger);
             animation: blink 0.8s step-end infinite; font-weight: 100;
         }
         @keyframes blink { 50% { opacity: 0; } }
+
         .game-over { color: var(--danger); font-weight: 700; font-size: 20px; margin-bottom: 14px; letter-spacing: 0.04em; }
         .victory { color: var(--text); font-weight: 700; font-size: 20px; margin-bottom: 14px; letter-spacing: 0.04em; }
         .advisor {
-            margin-top: 16px; padding: 10px 12px;
+            margin-top: 14px; padding: 10px 12px;
             border-left: 2px solid #555; background: #181818;
-            font-size: 15px; color: #bdb8ad; font-style: italic;
+            font-size: 14px; color: #bdb8ad; font-style: italic;
         }
         .achievement {
-            margin-top: 10px; padding: 10px 12px;
+            margin-top: 8px; padding: 8px 10px;
             border-left: 2px solid var(--good); background: #14200f;
-            font-size: 15px; color: #c8dcc0;
+            font-size: 14px; color: #c8dcc0;
         }
-        .deltas { margin-top: 12px; padding: 8px 0; border-top: 1px solid #222; }
-        .deltas div { margin: 3px 0; font-family: -apple-system, sans-serif; font-size: 14px; color: #b8b3a8; }
 
-        /* --- КНОПКИ --- */
+        /* ============================================================
+           КНОПКИ — сетка 2 колонки, широкие названия
+           ============================================================ */
         #actions {
             flex: 0 0 auto;
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0));
+            padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0));
             background: var(--bg-panel); border-top: 1px solid var(--border);
-            display: flex; flex-direction: column; gap: 6px;
+            display: flex; flex-direction: column; gap: 5px;
             max-width: 720px; width: 100%; margin: 0 auto;
         }
+        #actions.grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+        #actions.grid button.wide { grid-column: span 2; }
+
         button {
-            padding: 11px 14px; background: transparent; border: 1px solid var(--border);
+            padding: 10px 8px; background: transparent; border: 1px solid var(--border);
             color: var(--text);
             font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            font-size: 15px; cursor: pointer; text-align: center;
+            font-size: 13.5px; cursor: pointer; text-align: center;
             transition: none; user-select: none; -webkit-user-select: none;
-            min-height: 44px; display: flex; align-items: center; justify-content: center;
+            min-height: 42px; display: flex; align-items: center; justify-content: center;
+            line-height: 1.25; white-space: normal;
         }
         button:active:not(:disabled) { background: var(--text); color: var(--bg); border-color: var(--text); }
         button:disabled, button.locked {
@@ -105,9 +124,11 @@
         button.danger { border-color: var(--danger); color: var(--danger); }
         button.danger:active:not(:disabled) { background: var(--danger); color: var(--text); border-color: var(--danger); }
         button.primary { border-color: #666; color: #fff; }
-        button.primary:active:not(:disabled) { background: #e0dcd3; color: #121212; border-color: #e0dcd3; }
+        button.primary:active:not(:disabled) { background: var(--text); color: var(--bg); border-color: var(--text); }
 
-        /* --- ЛОГИН --- */
+        /* ============================================================
+           ЛОГИН
+           ============================================================ */
         #login-screen {
             flex: 1; padding: 40px 24px; max-width: 420px; margin: 0 auto;
             width: 100%; display: flex; flex-direction: column; justify-content: center;
@@ -139,10 +160,12 @@
 <div id="game-screen" style="display: none; flex: 1; flex-direction: column; min-height: 0;">
     <div id="stats-bar">
         <div class="stat" id="stat-day"><div class="label">День</div><div class="value">1</div></div>
+        <div class="stat" id="stat-season"><div class="label">Сезон</div><div class="value">Лето</div></div>
         <div class="stat" id="stat-distance"><div class="label">Вёрсты</div><div class="value">0</div></div>
         <div class="stat" id="stat-flour"><div class="label">Мука</div><div class="value">0</div></div>
         <div class="stat" id="stat-fish"><div class="label">Рыба</div><div class="value">0</div></div>
         <div class="stat" id="stat-meat"><div class="label">Мясо</div><div class="value">0</div></div>
+        <div class="stat" id="stat-berries"><div class="label">Ягоды</div><div class="value">0</div></div>
         <div class="stat" id="stat-vit-c"><div class="label">Витамин</div><div class="value">100</div></div>
         <div class="stat" id="stat-morale"><div class="label">Мораль</div><div class="value">100</div></div>
         <div class="stat" id="stat-discipline"><div class="label">Дисципл.</div><div class="value">70</div></div>
@@ -250,11 +273,13 @@ function setStats(run) {
     if (!run) return;
     currentRun = run;
     setStat('stat-day', run.day, false);
+    setStat('stat-season', run.season_name || '?', false);
     setStat('stat-distance', run.distance_covered, false);
     setStat('stat-flour', run.flour, run.flour < 40);
     setStat('stat-fish', run.fish, false);
     setStat('stat-meat', run.meat, false);
-    setStat('stat-vit-c', run.vit_c, run.vit_c < 30);
+    setStat('stat-berries', run.cranberries, false);
+    setStat('stat-vit-c', run.vit_c, run.vit_c < 30 || run.scurvy_active);
     setStat('stat-morale', run.morale, run.morale < 20);
     setStat('stat-discipline', run.discipline, run.discipline < 30);
     setStat('stat-squad', `${run.squad_size}/${run.wounded}`, run.squad_size < 3);
@@ -286,7 +311,15 @@ function setHtml(title, html) {
 }
 
 function clearActions() {
-    document.getElementById('actions').innerHTML = '';
+    const el = document.getElementById('actions');
+    el.innerHTML = '';
+    el.classList.remove('grid');
+}
+
+function setActionsGrid(on) {
+    const el = document.getElementById('actions');
+    if (on) el.classList.add('grid');
+    else el.classList.remove('grid');
 }
 
 function addButton(text, onclick, options = {}) {
@@ -294,6 +327,7 @@ function addButton(text, onclick, options = {}) {
     btn.textContent = text;
     if (options.danger) btn.classList.add('danger');
     if (options.primary) btn.classList.add('primary');
+    if (options.wide) btn.classList.add('wide');
     if (options.locked) {
         btn.classList.add('locked');
         btn.disabled = true;
@@ -326,7 +360,7 @@ function renderTravelersList(run) {
         if (t.wounded) {
             status = `<span style="color:#8b0000;">ранен (${t.wounded_days_left} дн.)</span>`;
         } else if (t.is_caretaker) {
-            status = `<span style="color:#8a8a8a;">при раненым (${t.caring_for})</span>`;
+            status = `<span style="color:#8a8a8a;">при раненом (${t.caring_for})</span>`;
         } else if (t.scurvy) {
             status = `<span style="color:#8b0000;">цинга</span>`;
         } else {
@@ -346,17 +380,40 @@ function renderTravelersList(run) {
 // МЕНЮ ДЕЙСТВИЙ
 // ============================================================
 function addMainMenu() {
-    addButton('Идти дальше', onNextTurn, { primary: true });
-    addButton('Заготовить дрова', () => onDoAction('wood'));
-    addButton('Охота', () => onDoAction('hunt'));
-    addButton('Рыбалка', () => onDoAction('fish'));
+    setActionsGrid(true);
+
+    // Главное действие — широкая
+    addButton('Идти дальше', onNextTurn, { primary: true, wide: true });
+
+    // Добыча еды
+    addButton('Охотиться', () => onDoAction('hunt'));
+    addButton('Наловить рыбы', () => onDoAction('fish'));
+
+    // Ягоды — только летом и осенью
+    const canBerries = currentRun && (currentRun.season === 1 || currentRun.season === 2);
+    if (canBerries) {
+        addButton('Собрать ягоды', () => onDoAction('berries'));
+    } else {
+        addButton('Заготовить дрова', () => onDoAction('wood'));
+    }
+
+    // Вторая половина добычи
+    if (canBerries) {
+        addButton('Заготовить дрова', () => onDoAction('wood'));
+    } else {
+        addButton('Собрать травы', () => onDoAction('herbs'));
+    }
     addButton('Собрать травы', () => onDoAction('herbs'));
-    addButton('Хвойный отвар', () => onDoAction('pine'));
-    addButton('Отдых у костра', () => onDoAction('rest'));
+    addButton('Сварить отвар', () => onDoAction('pine'));
+    addButton('Отдохнуть у костра', () => onDoAction('rest'));
+
+    // Экономика
     addButton('Продать пушнину', () => onDoAction('sell_fur'));
     addButton('Отправить в Москву', () => onDoAction('send_to_tsar'));
-    addButton('Основать город', () => onDoAction('found_city'));
-    addButton('Отряд', onShowTravelers);
+    addButton('Основать город', () => onDoAction('found_city'), { wide: true });
+
+    // Отряд
+    addButton('Показать отряд', onShowTravelers, { wide: true });
 }
 
 // ============================================================
@@ -430,8 +487,9 @@ async function onNextTurn() {
     if (body.status === 'game_over') {
         haptic('error');
         setStats({ day: body.day, distance_covered: body.distance_covered,
-            flour: 0, fish: 0, meat: 0, vit_c: 0, morale: 0, discipline: 0,
-            squad_size: 0, wounded: 0, money: 0, charters: 0, cities_count: 0 });
+            flour: 0, fish: 0, meat: 0, cranberries: 0, vit_c: 0, morale: 0,
+            discipline: 0, squad_size: 0, wounded: 0, money: 0, charters: 0,
+            cities_count: 0, season_name: '' });
         setHtml('Конец пути',
             `<div class="game-over">☠ ${body.reason}</div>` +
             `Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`);
@@ -451,7 +509,8 @@ async function onNextTurn() {
 
     if (body.type === 'event') {
         haptic('medium');
-        renderEvent(body.event_id, body.event_title, body.event_text, body.choices, body.run, body.advisor_hint);
+        renderEvent(body.event_id, body.event_title, body.event_text,
+            body.choices, body.run, body.advisor_hint);
     } else if (body.type === 'quiet_day') {
         let text = body.message || '';
         if (body.deltas?.length) text += '\n\n' + body.deltas.map(d => '• ' + d).join('\n');
@@ -473,6 +532,7 @@ function renderEvent(eventId, title, text, choices, run, advisorHint) {
     setContent(title, text);
     if (advisorHint) appendAdvisor(advisorHint);
     clearActions();
+
     choices.forEach(ch => {
         const cond = ch.conditions || {};
         const req = cond.items_required || {};
@@ -490,7 +550,8 @@ function renderEvent(eventId, title, text, choices, run, advisorHint) {
                 break;
             }
         }
-        addButton(ch.text, () => onMakeChoice(eventId, ch.choice_id), { locked, lockReason: reason });
+        addButton(ch.text, () => onMakeChoice(eventId, ch.choice_id),
+            { locked, lockReason: reason });
     });
 }
 
@@ -501,7 +562,8 @@ async function onMakeChoice(eventId, choiceId) {
     clearActions();
     setContent('', '...', true);
 
-    const { body } = await api('/api/make_choice', { event_id: eventId, choice_id: choiceId });
+    const { body } = await api('/api/make_choice',
+        { event_id: eventId, choice_id: choiceId });
 
     if (body.status === 'error') {
         haptic('error');
@@ -526,7 +588,8 @@ async function onMakeChoice(eventId, choiceId) {
 
     if (body.next_event) {
         const { body: state } = await api('/api/get_state');
-        const { body: ev } = await api('/api/get_event', { event_id: state.run.current_event_id });
+        const { body: ev } = await api('/api/get_event',
+            { event_id: state.run.current_event_id });
         if (ev.status === 'ok') {
             let fullText = text ? text + '\n\n———\n\n' + ev.event_text : ev.event_text;
             setContent(ev.event_title, fullText, true);
@@ -541,7 +604,8 @@ async function onMakeChoice(eventId, choiceId) {
                         break;
                     }
                 }
-                addButton(ch.text, () => onMakeChoice(ev.event_id, ch.choice_id), { locked, lockReason: reason });
+                addButton(ch.text, () => onMakeChoice(ev.event_id, ch.choice_id),
+                    { locked, lockReason: reason });
             });
             return;
         }
@@ -563,8 +627,9 @@ async function onDoAction(actionType) {
     if (body.status === 'game_over') {
         haptic('error');
         setStats({ day: body.day, distance_covered: body.distance_covered,
-            flour: 0, fish: 0, meat: 0, vit_c: 0, morale: 0, discipline: 0,
-            squad_size: 0, wounded: 0, money: 0, charters: 0, cities_count: 0 });
+            flour: 0, fish: 0, meat: 0, cranberries: 0, vit_c: 0, morale: 0,
+            discipline: 0, squad_size: 0, wounded: 0, money: 0, charters: 0,
+            cities_count: 0, season_name: '' });
         setHtml('Конец пути',
             `<div class="game-over">☠ ${body.reason}</div>` +
             `Вы прошли ${body.distance_covered} вёрст и погибли на ${body.day}-й день.`);
@@ -618,7 +683,8 @@ async function loadCurrentEvent() {
         return;
     }
     setStats(state.run);
-    const { body: ev } = await api('/api/get_event', { event_id: state.run.current_event_id });
+    const { body: ev } = await api('/api/get_event',
+        { event_id: state.run.current_event_id });
     if (ev.status !== 'ok') {
         setContent('Ошибка', ev.message || JSON.stringify(ev), true);
         clearActions();

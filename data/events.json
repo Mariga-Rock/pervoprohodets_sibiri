@@ -13,14 +13,15 @@
 
   "event_scurvy_start": {
     "title": "Цинга",
-    "text": "У одного из казаков распухли и кровоточат дёсны. Ещё трое жалуются на слабость.",
+    "text": "У казаков распухли и кровоточат дёсны. Старые раны начали кровить. Восемь недель без свежих источников витамина.",
     "weight": 100,
-    "is_unique": true,
-    "trigger_conditions": {"max_vit_c": 30, "min_day": 5},
+    "is_unique": false,
+    "trigger_conditions": {},
     "choices": [
       {"choice_id": "bloodletting", "text": "Кровопускание", "conditions": {}, "effects": {"stats": {"morale": -15, "endurance": -1}, "tags_add": ["bled_for_nothing", "healer_pending"], "items_add": {}, "items_remove": []}, "consequences": "Больному вскрыли вену. Ослаб, легче не стало."},
-      {"choice_id": "pine_brew", "text": "Варить хвойный отвар", "conditions": {}, "effects": {"stats": {"flour": -15, "vit_c": 30, "morale": 5, "cure_scurvy": 1}, "items_add": {}, "items_remove": []}, "consequences": "Варили хвою весь день. Отвар пить постоянно."},
-      {"choice_id": "cheremsha", "text": "Истолочь черемшу", "conditions": {"items_required": {"herbs": 2}}, "effects": {"stats": {"flour": -5, "vit_c": 45, "cure_scurvy": 1}, "items_add": {}, "items_remove": ["herbs", "herbs"]}, "consequences": "Жевали черемшу. Жжёт, но по делу."}
+      {"choice_id": "pine_brew", "text": "Варить хвойный отвар", "conditions": {}, "effects": {"stats": {"flour": -15, "add_vitamin": 25, "cure_scurvy": 99}, "items_add": {}, "items_remove": []}, "consequences": "Варили хвою весь день. Отвар пить постоянно."},
+      {"choice_id": "cheremsha", "text": "Истолочь черемшу", "conditions": {"items_required": {"herbs": 2}, "season_in": [0, 1]}, "effects": {"stats": {"flour": -5, "add_vitamin": 45, "cure_scurvy": 99}, "items_add": {}, "items_remove": ["herbs", "herbs"]}, "consequences": "Жевали черемшу. Жжёт, но по делу."},
+      {"choice_id": "berries", "text": "Дать ягод", "conditions": {"items_required": {"cranberries": 2}}, "effects": {"stats": {"add_vitamin": 25, "cure_scurvy": 99}, "items_add": {}, "items_remove": ["cranberries", "cranberries"]}, "consequences": "Клюква. Кисло, но витамин."}
     ]
   },
 
@@ -199,10 +200,10 @@
     "title": "Рыбалка под льдом",
     "text": "Озеро. Лёд держит. Под ним рыба. Работа на день.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 4},
+    "trigger_conditions": {"min_day": 4, "season_in": [3, 0]},
     "choices": [
-      {"choice_id": "full_day", "text": "Рыбачить весь день", "conditions": {}, "effects": {"stats": {"flour": -10, "vit_c": 15, "morale": 10, "fish": 10}, "tags_add": ["fished"], "items_add": {}, "items_remove": []}, "consequences": "Восемь лунок, десять связок рыбы."},
-      {"choice_id": "half_day", "text": "Полдня", "conditions": {}, "effects": {"stats": {"flour": -10, "vit_c": 5, "morale": 5, "fish": 4}, "tags_add": [], "items_add": {}, "items_remove": []}, "consequences": "Поймали четыре связки."},
+      {"choice_id": "full_day", "text": "Рыбачить весь день", "conditions": {}, "effects": {"stats": {"flour": -10, "add_vitamin": 8, "morale": 10, "fish": 6}, "tags_add": ["fished"], "items_add": {}, "items_remove": []}, "consequences": "Восемь лунок, шесть связок рыбы."},
+      {"choice_id": "half_day", "text": "Полдня", "conditions": {}, "effects": {"stats": {"flour": -10, "add_vitamin": 4, "morale": 5, "fish": 3}, "tags_add": [], "items_add": {}, "items_remove": []}, "consequences": "Поймали три связки."},
       {"choice_id": "skip", "text": "Пройти мимо", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": -5}, "items_add": {}, "items_remove": []}, "consequences": "Прошли."}
     ]
   },
@@ -230,11 +231,11 @@
 
   "event_healer_visit": {
     "title": "Знахарка",
-    "text": "Местная знахарка предлагает выпить отвар хвои. Последний шанс.",
+    "text": "Знахарка предлагает отвар хвои для всех больных. Последний шанс.",
     "chain_only": true,
     "choices": [
-      {"choice_id": "accept", "text": "Согласиться", "conditions": {}, "effects": {"stats": {"vit_c": 20, "cure_scurvy": 1}, "tags_add": [], "items_add": {}, "items_remove": []}, "consequences": "Больной выпил отвар. Цинга отступает."},
-      {"choice_id": "refuse", "text": "Отказаться", "conditions": {}, "effects": {"stats": {"morale": -15}, "tags_add": ["healer_refused"], "items_add": {}, "items_remove": []}, "consequences": "Больной отказался. Не доживёт до весны."}
+      {"choice_id": "accept", "text": "Согласиться", "conditions": {}, "effects": {"stats": {"add_vitamin": 20, "cure_scurvy": 99}, "tags_add": [], "items_add": {}, "items_remove": []}, "consequences": "Больные выпили отвар. Цинга отступает."},
+      {"choice_id": "refuse", "text": "Отказаться", "conditions": {}, "effects": {"stats": {"morale": -15}, "tags_add": ["healer_refused"], "items_add": {}, "items_remove": []}, "consequences": "Больные отказались. Не доживут до весны."}
     ]
   },
 

@@ -12,30 +12,21 @@ from app.extensions import db  # noqa: E402
 from app.models import Run, Traveler, User  # noqa: E402,F401
 from app.constants import (  # noqa: E402
     DAILY_FOOD_PER_PERSON,
-    DEFAULT_CRANBERRIES,
-    DEFAULT_DAY,
-    DEFAULT_DISTANCE,
-    DEFAULT_FISH,
-    DEFAULT_FLOUR,
-    DEFAULT_INVENTORY,
-    DEFAULT_MEAT,
-    DEFAULT_MORALE,
-    DEFAULT_VIT_C,
-    DEFAULT_WARMTH,
+    DEFAULT_CRANBERRIES, DEFAULT_DAY, DEFAULT_DISTANCE,
+    DEFAULT_FISH, DEFAULT_FLOUR, DEFAULT_INVENTORY, DEFAULT_MEAT,
+    DEFAULT_MORALE, DEFAULT_VIT_C, DEFAULT_WARMTH,
     DRUNKARD_MONEY_THRESHOLD,
-    FISH_PER_DAY,
-    FUR_PER_CHARTER,
-    FUR_PRICE,
-    HUNGER_DEATH_DAY,
-    MEAT_PER_DAY,
+    FISH_PER_DAY, FUR_PER_CHARTER, FUR_PRICE,
+    HUNGER_DEATH_DAY, MEAT_PER_DAY,
+    SCURVY_RECOVERY_DAYS, SCURVY_START_DAYS,
+    VIT_FROM_BERRIES, VIT_FROM_FISH, VIT_FROM_MEAT, VIT_FROM_PINE,
     STARTING_TRAVELERS,
-    TITLE_MAGNATE_THRESHOLD,
-    TITLE_NOBLE_THRESHOLD,
-    city_charter_cost,
-    hunting_synergy,
+    TITLE_MAGNATE_THRESHOLD, TITLE_NOBLE_THRESHOLD,
+    city_charter_cost, hunting_synergy,
 )
 from app.advisor import get_advisor_hint  # noqa: E402
 from app.achievements import check_achievements  # noqa: E402
+from app import season as season_mod  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -44,32 +35,25 @@ def _configure_logging(app):
     level = logging.DEBUG if app.debug else logging.INFO
     app.logger.setLevel(level)
     if not logging.getLogger().handlers:
-        logging.basicConfig(
-            level=level,
-            format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-        )
+        logging.basicConfig(level=level,
+                            format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
     if not app.logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)s [%(name)s] %(message)s"
-        ))
-        app.logger.addHandler(handler)
+        h = logging.StreamHandler()
+        h.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s [%(name)s] %(message)s"))
+        app.logger.addHandler(h)
 
 
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        database_url = "postgresql+psycopg2://user:caloriealot@localhost:5432/pervoprokhodets"
-        app.logger.warning("DATABASE_URL не задан, дефолт: %s", database_url)
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    url = os.environ.get("DATABASE_URL") or \
+          "postgresql+psycopg2://user:caloriealot@localhost:5432/pervoprokhodets"
+    app.config["SQLALCHEMY_DATABASE_URI"] = url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_recycle": 1800,
+        "pool_pre_ping": True, "pool_size": 5,
+        "max_overflow": 10, "pool_recycle": 1800,
     }
     db.init_app(app)
     _configure_logging(app)
@@ -117,11 +101,17 @@ def _calculate_speed(run):
         speed = max(1.0, speed - non_walking)
     if (run.inventory or {}).get("dog_sled"):
         speed = max(speed, 5.0)
+    # Зимой медленнее
+    if run.season == 3:
+        speed *= 0.8
     return max(1, int(speed))
 
 
 def _consume_food(run):
     need = run.squad_size * DAILY_FOOD_PER_PERSON
+    # Зимой едят больше
+    if run.season == 3:
+        need = int(need * 1.3)
     if need <= 0:
         return True
     if run.flour >= need:
@@ -129,16 +119,16 @@ def _consume_food(run):
         run.hunger_days = 0
         return True
     if run.flour + run.fish >= need:
-        remainder = need - run.flour
+        r = need - run.flour
         run.flour = 0
-        run.fish -= remainder
+        run.fish -= r
         run.hunger_days = 0
         return True
     if run.flour + run.fish + run.meat >= need:
-        remainder = need - run.flour - run.fish
+        r = need - run.flour - run.fish
         run.flour = 0
         run.fish = 0
-        run.meat -= remainder
+        run.meat -= r
         run.hunger_days = 0
         return True
     run.flour = 0
@@ -152,63 +142,104 @@ def _consume_food(run):
     return False
 
 
+def _tick_vitamin_and_scurvy(run, vitamin_used_today=False):
+    """
+    Обновляет витамин C и цингу.
+    vitamin_used_today — True, если игрок сегодня использовал источник
+    (в этом случае days_without_vit уже сброшен вызывающим кодом).
+    """
+    from sqlalchemy.orm.attributes import flag_modified
+
+    # 1. Деградация витамина
+    if not vitamin_used_today:
+        season_mod.degrade_vit_c(run)
+    # Если использовал — days_without_vit уже 0
+
+    # 2. Цинга начинается
+    if (run.days_without_vit >= SCURVY_START_DAYS
+            and not run.scurvy_active):
+        run.scurvy_active = True
+        from app.events_parser import _progress_scurvy
+        _progress_scurvy(run)
+        _progress_scurvy(run)  # 2 больных сразу
+
+    # 3. Если цинга активна — прогрессия
+    if run.scurvy_active:
+        from app.events_parser import _progress_scurvy
+        if run.day % 2 == 0:  # каждый второй день +1 больной
+            _progress_scurvy(run)
+        # Больные теряют endurance
+        for t in run.travelers:
+            if t.alive and t.scurvy:
+                t.endurance -= 1
+                if t.endurance <= 0:
+                    t.alive = False
+        # Восстановление: 3 дня с витамином подряд
+        if run.days_without_vit == 0:
+            run.scurvy_recovery_days = (run.scurvy_recovery_days or 0) + 1
+            if run.scurvy_recovery_days >= SCURVY_RECOVERY_DAYS:
+                run.scurvy_active = False
+                run.scurvy_recovery_days = 0
+                for t in run.travelers:
+                    if t.alive and t.scurvy:
+                        t.scurvy = False
+                        t.scurvy_refused = False
+                        t.scurvy_healer_seen = False
+        else:
+            run.scurvy_recovery_days = 0
+
+
 def _check_story_event(run):
-    """Проверяет сюжетные триггеры. Возвращает event_id или None."""
+    """Сюжетные триггеры."""
     import random
     from sqlalchemy.orm.attributes import flag_modified
 
-    # ---- ОСАДА ----
+    # Осада
     if run.siege_days_left > 0:
-        if ("siege_hunger_done" not in run.tags
-                and run.siege_days_left <= 12):
+        if "siege_hunger_done" not in run.tags and run.siege_days_left <= 12:
             run.tags.append("siege_hunger_done")
             flag_modified(run, "tags")
             return "event_siege_hunger"
-        if ("siege_assault_done" not in run.tags
-                and run.siege_days_left <= 9):
+        if "siege_assault_done" not in run.tags and run.siege_days_left <= 9:
             run.tags.append("siege_assault_done")
             flag_modified(run, "tags")
             return "event_siege_assault"
-        if ("siege_koltso_done" not in run.tags
-                and run.siege_days_left <= 6):
+        if "siege_koltso_done" not in run.tags and run.siege_days_left <= 6:
             run.tags.append("siege_koltso_done")
             flag_modified(run, "tags")
             return "event_siege_koltso"
-        if ("siege_end_done" not in run.tags
-                and run.siege_days_left <= 1):
+        if "siege_end_done" not in run.tags and run.siege_days_left <= 1:
             run.tags.append("siege_end_done")
             flag_modified(run, "tags")
             return "event_siege_end"
         return None
 
-    # ---- СЛУХ 1 ----
+    # Цинга (приоритетно)
+    if run.scurvy_active and "scurvy_event_done" not in run.tags:
+        run.tags.append("scurvy_event_done")
+        flag_modified(run, "tags")
+        return "event_scurvy_start"
+
     if run.distance_covered >= 10 and "rumor_1_done" not in run.tags:
         run.tags.append("rumor_1_done")
         flag_modified(run, "tags")
         return "event_first_rumor"
 
-    # ---- ЧУВАШСКИЙ МЫС ----
     if run.distance_covered >= 25 and run.isker_status == "none":
         return "event_chuvash_mys"
 
-    # ---- УКРЕПЛЕНИЕ ИСКЕРА ----
-    if (run.isker_status == "taken"
-            and "isker_fortified" not in run.tags):
+    if run.isker_status == "taken" and "isker_fortified" not in run.tags:
         run.tags.append("isker_fortified")
         flag_modified(run, "tags")
         return "event_fortify_isker"
 
-    # ---- СЛУХ 2 ----
-    if (run.distance_covered >= 35
-            and run.mangazeya_rumors >= 1
+    if (run.distance_covered >= 35 and run.mangazeya_rumors >= 1
             and "rumor_2_done" not in run.tags):
         run.tags.append("rumor_2_done")
         flag_modified(run, "tags")
         return "event_second_rumor"
 
-    # ---- НАЧАЛО ОСАДЫ ----
-    if (run.isker_status == "taken"
-            and run.distance_covered >= 45
+    if (run.isker_status == "taken" and run.distance_covered >= 45
             and "siege_started" not in run.tags):
         run.siege_days_left = random.randint(10, 15)
         run.isker_status = "under_siege"
@@ -216,13 +247,11 @@ def _check_story_event(run):
         flag_modified(run, "tags")
         return "event_siege_start"
 
-    # ---- ЯСАК СОБРАН ----
     if run.yasak_count >= 5 and "yasak_triggered" not in run.tags:
         run.tags.append("yasak_triggered")
         flag_modified(run, "tags")
         return "event_yasak_sent"
 
-    # ---- СЕЛЬКУПЫ: БУНТ ----
     if ("selkup_risky" in run.tags
             and "selkup_revolt_done" not in run.tags):
         if random.random() < 0.15:
@@ -230,12 +259,10 @@ def _check_story_event(run):
             flag_modified(run, "tags")
             return "event_selkup_revolt"
 
-    # ---- ВОЛХОВСКИЙ ----
     if run.distance_covered >= 75 and not run.volhovsky_arrived:
         return "event_volhovsky_arrives"
 
-    if (run.volhovsky_arrived
-            and not run.volhovsky_healed
+    if (run.volhovsky_arrived and not run.volhovsky_healed
             and "volhovsky_sick_done" not in run.tags):
         run.tags.append("volhovsky_sick_done")
         flag_modified(run, "tags")
@@ -247,19 +274,16 @@ def _check_story_event(run):
         flag_modified(run, "tags")
         return "event_volhovsky_recovers"
 
-    # ---- ВАГАЙ ----
     if run.distance_covered >= 90 and "vagai_done" not in run.tags:
         run.tags.append("vagai_done")
         flag_modified(run, "tags")
         return "event_vagai_night"
 
-    # ---- САМОЯДЬ ----
     if run.distance_covered >= 95 and "samoyed_done" not in run.tags:
         run.tags.append("samoyed_done")
         flag_modified(run, "tags")
         return "event_samoyed_camp"
 
-    # ---- ЗЕМЛЯ МАНГАЗЕЙСКАЯ ----
     if run.distance_covered >= 100 and "mangazeya_done" not in run.tags:
         run.tags.append("mangazeya_done")
         flag_modified(run, "tags")
@@ -268,22 +292,20 @@ def _check_story_event(run):
     return None
 
 
-def _build_story_event_response(run, event_id, achievement_messages, hint):
+def _build_story_event_response(run, event_id, ach, hint):
     from app.events_loader import get_event as load_event
-    event_data = load_event(event_id)
-    choices = [
-        {"choice_id": ch["choice_id"], "text": ch["text"],
-         "conditions": ch.get("conditions") or {}}
-        for ch in event_data["choices"]
-    ]
+    ed = load_event(event_id)
+    choices = [{"choice_id": ch["choice_id"], "text": ch["text"],
+                "conditions": ch.get("conditions") or {}}
+               for ch in ed["choices"]]
     return jsonify({
         "status": "ok", "type": "event",
         "event_id": event_id,
-        "event_title": event_data.get("title", ""),
-        "event_text": event_data["text"],
+        "event_title": ed.get("title", ""),
+        "event_text": ed["text"],
         "choices": choices,
         "advisor_hint": hint,
-        "achievements": achievement_messages,
+        "achievements": ach,
         "run": serialize_run(run),
     }), 200
 
@@ -291,7 +313,6 @@ def _build_story_event_response(run, event_id, achievement_messages, hint):
 def _build_epilogue(run, user):
     lines = []
     lines.append(f"Вы прошли {run.distance_covered} вёрст за {run.day} дней.")
-
     if "isker_garrison" in run.tags:
         lines.append("Искер взят и укреплён гарнизоном. Первый русский острог на Иртыше.")
     elif "isker_burned" in run.tags:
@@ -307,10 +328,8 @@ def _build_epilogue(run, user):
 
     if run.yasak_count >= 5:
         lines.append("Пять племён признали руку московского царя. Ясак отправлен в Москву.")
-    elif run.yasak_count >= 3:
-        lines.append(f"Ясак собран с {run.yasak_count} племён.")
     elif run.yasak_count >= 1:
-        lines.append(f"Ясак собран только с {run.yasak_count} племён.")
+        lines.append(f"Ясак собран с {run.yasak_count} племён.")
     else:
         lines.append("Ясак собрать не удалось.")
 
@@ -320,8 +339,7 @@ def _build_epilogue(run, user):
         lines.append("Иван Кольцо погиб на переговорах с Карачой.")
 
     if run.ermak_alive:
-        lines.append("Ермак Тимофеевич выжил на Вагае и дошёл до реки Таз. "
-                     "Он вернулся в Москву с вестью о Закаменной земле.")
+        lines.append("Ермак Тимофеевич выжил на Вагае и дошёл до реки Таз.")
     else:
         lines.append("Ермак Тимофеевич погиб на Вагае. Отряд вёл Матвей Мещеряк.")
 
@@ -332,7 +350,6 @@ def _build_epilogue(run, user):
              "на реке Таз воеводы Мирон Шаховской и Данила Хрипунов "
              "основали город Мангазея. Ваше открытие стало первым шагом. "
              "Сибирь помнит вас.")
-
     return {"headline": "Земля мангазейская", "lines": lines, "final": final}
 
 
@@ -340,17 +357,18 @@ def serialize_run(run):
     return {
         "day": run.day,
         "distance_covered": run.distance_covered,
-        "flour": run.flour,
-        "fish": run.fish,
-        "meat": run.meat,
+        "season": run.season,
+        "season_day": run.season_day,
+        "season_name": season_mod.season_name(run),
+        "flour": run.flour, "fish": run.fish, "meat": run.meat,
         "cranberries": run.cranberries,
         "hunger_days": run.hunger_days,
         "vit_c": run.vit_c,
-        "morale": run.morale,
-        "warmth": run.warmth,
+        "days_without_vit": run.days_without_vit,
+        "scurvy_active": run.scurvy_active,
+        "morale": run.morale, "warmth": run.warmth,
         "discipline": run.discipline,
-        "money": run.money,
-        "charters": run.charters,
+        "money": run.money, "charters": run.charters,
         "total_fur_sent": run.total_fur_sent,
         "cities_count": run.cities_count,
         "noble_title": run.noble_title,
@@ -359,8 +377,7 @@ def serialize_run(run):
         "caretaker_count": run.caretaker_count,
         "squad_size": run.squad_size,
         "alive_count": run.alive_count,
-        "inventory": run.inventory,
-        "tags": run.tags,
+        "inventory": run.inventory, "tags": run.tags,
         "recent_events": run.recent_events,
         "current_event_id": run.current_event_id,
         "isker_status": run.isker_status,
@@ -375,18 +392,15 @@ def serialize_run(run):
         "volhovsky_alive": run.volhovsky_alive,
         "volhovsky_healed": run.volhovsky_healed,
         "travelers": [
-            {
-                "id": t.id, "name": t.name, "hunting": t.hunting,
-                "endurance": t.endurance, "endurance_max": t.endurance_max,
-                "is_ataman": t.is_ataman, "is_doctor": t.is_doctor,
-                "is_priest": t.is_priest,
-                "wounded": t.wounded,
-                "wounded_days_left": t.wounded_days_left,
-                "is_caretaker": t.is_caretaker,
-                "caring_for": t.caring_for,
-                "scurvy": t.scurvy,
-                "alive": t.alive,
-            }
+            {"id": t.id, "name": t.name, "hunting": t.hunting,
+             "endurance": t.endurance, "endurance_max": t.endurance_max,
+             "is_ataman": t.is_ataman, "is_doctor": t.is_doctor,
+             "is_priest": t.is_priest,
+             "wounded": t.wounded,
+             "wounded_days_left": t.wounded_days_left,
+             "is_caretaker": t.is_caretaker,
+             "caring_for": t.caring_for,
+             "scurvy": t.scurvy, "alive": t.alive}
             for t in run.travelers
         ],
     }
@@ -394,8 +408,7 @@ def serialize_run(run):
 
 def serialize_user(user):
     return {
-        "telegram_id": user.telegram_id,
-        "username": user.username,
+        "telegram_id": user.telegram_id, "username": user.username,
         "total_deaths": user.total_deaths,
         "purchased_dlc": user.purchased_dlc,
         "achievements": user.achievements or [],
@@ -456,12 +469,10 @@ def register_routes(app):
 
         active_run = (Run.query.filter_by(user_id=user.id)
                       .order_by(Run.id.desc()).first())
-
         if active_run and "game_won" in (active_run.tags or []):
             db.session.delete(active_run)
             db.session.commit()
             active_run = None
-
         if active_run:
             db.session.commit()
             return _state_response("already_running", user, active_run)
@@ -469,6 +480,7 @@ def register_routes(app):
         new_run = Run(
             user_id=user.id, day=DEFAULT_DAY,
             distance_covered=DEFAULT_DISTANCE,
+            season=1, season_day=1,
             flour=DEFAULT_FLOUR, fish=DEFAULT_FISH,
             meat=DEFAULT_MEAT, cranberries=DEFAULT_CRANBERRIES,
             vit_c=DEFAULT_VIT_C, morale=DEFAULT_MORALE,
@@ -496,7 +508,6 @@ def register_routes(app):
             db.session.rollback()
             return jsonify({"status": "error",
                             "message": "не удалось создать экспедицию"}), 500
-
         return _state_response("created", user, new_run)
 
     @app.route("/api/get_event", methods=["POST"])
@@ -514,18 +525,18 @@ def register_routes(app):
         run = user.run
         if run.current_event_id != event_id:
             return jsonify({"status": "error",
-                            "message": f"Игрок в '{run.current_event_id}', запрошен '{event_id}'"}), 400
+                            "message": f"Игрок в '{run.current_event_id}'"}), 400
         from app.events_loader import get_event as load_event
-        event_data = load_event(event_id)
-        if not event_data:
+        ed = load_event(event_id)
+        if not ed:
             return jsonify({"status": "error", "message": f"Ивент '{event_id}' не найден"}), 404
         choices = [{"choice_id": ch["choice_id"], "text": ch["text"],
                     "conditions": ch.get("conditions") or {}}
-                   for ch in event_data["choices"]]
+                   for ch in ed["choices"]]
         return jsonify({
             "status": "ok", "event_id": event_id,
-            "event_title": event_data.get("title", ""),
-            "event_text": event_data["text"],
+            "event_title": ed.get("title", ""),
+            "event_text": ed["text"],
             "choices": choices, "run": serialize_run(run),
         }), 200
 
@@ -537,10 +548,8 @@ def register_routes(app):
             return err
         event_id = data.get("event_id")
         choice_id = data.get("choice_id")
-        if not event_id:
-            return jsonify({"status": "error", "message": "event_id обязателен"}), 400
-        if not choice_id:
-            return jsonify({"status": "error", "message": "choice_id обязателен"}), 400
+        if not event_id or not choice_id:
+            return jsonify({"status": "error", "message": "event_id и choice_id обязательны"}), 400
         user = User.query.filter_by(telegram_id=tg_id).first()
         if not user or not user.run:
             return jsonify({"status": "error", "message": "Нет активной экспедиции"}), 404
@@ -549,8 +558,7 @@ def register_routes(app):
         if result["status"] == "error":
             return jsonify(result), 400
         return jsonify({
-            "status": "ok",
-            "next_event": result["next_event"],
+            "status": "ok", "next_event": result["next_event"],
             "run": serialize_run(result["run"]),
             "consequences": result.get("consequences"),
         }), 200
@@ -565,23 +573,27 @@ def register_routes(app):
         if not user or not user.run:
             return jsonify({"status": "error", "message": "Нет активной экспедиции"}), 404
         run = user.run
-
         if run.current_event_id:
             return jsonify({"status": "error",
-                            "message": f"Игрок в ивенте '{run.current_event_id}'. Сначала сделай выбор."}), 400
+                            "message": f"Игрок в ивенте '{run.current_event_id}'"}), 400
 
         from sqlalchemy.orm.attributes import flag_modified
 
-        # Налог на жизнь
-        _consume_food(run)
-        run.vit_c -= 3
-        run.day += 1
+        # 1. Сезон вперёд
+        season_changed = season_mod.advance_season(run)
 
-        # Движение
+        # 2. Еда
+        _consume_food(run)
+
+        # 3. Витамин C и цинга
+        _tick_vitamin_and_scurvy(run, vitamin_used_today=False)
+
+        # 4. День и движение
+        run.day += 1
         speed = _calculate_speed(run)
         run.distance_covered += speed
 
-        # Восстановление раненых
+        # 5. Восстановление раненых
         for t in run.travelers:
             if not (t.alive and t.wounded and t.wounded_days_left > 0):
                 continue
@@ -600,23 +612,7 @@ def register_routes(app):
                         c.is_caretaker = False
                         c.caring_for = None
 
-        # Цинга
-        if run.vit_c < 30:
-            from app.events_parser import _progress_scurvy
-            _progress_scurvy(run)
-        for t in run.travelers:
-            if t.alive and t.scurvy:
-                t.endurance -= 1
-                if t.endurance <= 0:
-                    t.alive = False
-        if run.vit_c > 50:
-            for t in run.travelers:
-                if t.alive and t.scurvy:
-                    t.scurvy = False
-                    t.scurvy_refused = False
-                    t.scurvy_healer_seen = False
-
-        # Титул
+        # 6. Титул
         if (run.total_fur_sent >= TITLE_MAGNATE_THRESHOLD
                 and run.noble_title != "вельможа"):
             run.noble_title = "вельможа"
@@ -624,42 +620,38 @@ def register_routes(app):
                 and not run.noble_title):
             run.noble_title = "дворянин"
 
-        # Пьянство
+        # 7. Пьянство
         if (run.money > DRUNKARD_MONEY_THRESHOLD
                 and "drunkard_handled" not in run.tags
                 and "drunkard_pending" not in run.tags):
             run.tags.append("drunkard_pending")
 
-        # Достижения
-        achievement_messages = []
-        check_achievements(user, run, achievement_messages)
+        # 8. Достижения
+        ach = []
+        check_achievements(user, run, ach)
         flag_modified(user, "achievements")
 
-        # Осада: отсчёт
+        # 9. Осада
         if run.siege_days_left > 0:
             run.siege_days_left -= 1
 
-        # Смерть
-        game_over_reason = None
+        # 10. Смерть
+        reason = None
         if run.alive_count <= 0:
-            game_over_reason = "Отряд погиб."
-        elif run.vit_c <= 0:
-            game_over_reason = "Цинга выкосила всех."
+            reason = "Отряд погиб."
         elif run.morale <= 0:
-            game_over_reason = "Отряд взбунтовался и ушёл."
+            reason = "Отряд взбунтовался и ушёл."
         elif run.hunger_days >= HUNGER_DEATH_DAY:
-            game_over_reason = "Отряд умер от голода."
-
-        if game_over_reason:
-            day_died = run.day
-            dist = run.distance_covered
+            reason = "Отряд умер от голода."
+        if reason:
+            d, dist = run.day, run.distance_covered
             user.total_deaths += 1
             db.session.delete(run)
             db.session.commit()
-            return jsonify({"status": "game_over", "reason": game_over_reason,
-                            "day": day_died, "distance_covered": dist}), 200
+            return jsonify({"status": "game_over", "reason": reason,
+                            "day": d, "distance_covered": dist}), 200
 
-        # Победа
+        # 11. Победа
         if run.distance_covered >= 100:
             if "game_won" not in run.tags:
                 run.tags.append("game_won")
@@ -668,64 +660,61 @@ def register_routes(app):
             return jsonify({"status": "victory", "day": run.day,
                             "distance_covered": run.distance_covered}), 200
 
-        # Приоритетные события (по тегам)
-        PRIORITY_EVENTS = {
-            "need_funeral": "event_funeral",
-            "drunkard_pending": "event_drunkard",
-            "healer_pending": "event_healer_visit",
-        }
-        priority_event_id = None
-        for tag, event_id in PRIORITY_EVENTS.items():
+        # 12. Приоритетные теги
+        PRIORITY = {"need_funeral": "event_funeral",
+                    "drunkard_pending": "event_drunkard",
+                    "healer_pending": "event_healer_visit"}
+        prio_id = None
+        for tag, eid in PRIORITY.items():
             if tag in run.tags:
-                if event_id == "event_funeral" and not _has_priest(run):
+                if eid == "event_funeral" and not _has_priest(run):
                     run.tags.remove(tag)
                     flag_modified(run, "tags")
                     continue
-                priority_event_id = event_id
+                prio_id = eid
                 run.tags.remove(tag)
                 flag_modified(run, "tags")
                 break
-        if priority_event_id:
-            run.current_event_id = priority_event_id
+        if prio_id:
+            run.current_event_id = prio_id
             hint = get_advisor_hint(run)
             db.session.commit()
-            return _build_story_event_response(
-                run, priority_event_id, achievement_messages, hint
-            )
+            return _build_story_event_response(run, prio_id, ach, hint)
 
-        # Сюжетные события
-        story_event_id = _check_story_event(run)
-        if story_event_id:
-            run.current_event_id = story_event_id
+        # 13. Сюжет
+        sid = _check_story_event(run)
+        if sid:
+            run.current_event_id = sid
             hint = get_advisor_hint(run)
             flag_modified(run, "tags")
             db.session.commit()
-            return _build_story_event_response(
-                run, story_event_id, achievement_messages, hint
-            )
+            return _build_story_event_response(run, sid, ach, hint)
 
-        # Дневной ивент
+        # 14. Обычный ивент
         from app.events_engine import generate_daily_event
-        event_id = generate_daily_event(run)
-        if event_id:
-            run.current_event_id = event_id
+        eid = generate_daily_event(run)
+        if eid:
+            run.current_event_id = eid
         flag_modified(run, "tags")
         hint = get_advisor_hint(run)
+
+        # 15. Сообщение о смене сезона
+        season_msg = ""
+        if season_changed:
+            season_msg = f"\n\nНаступила {season_changed.lower()}."
+
         db.session.commit()
 
-        if event_id:
-            return _build_story_event_response(
-                run, event_id, achievement_messages, hint
-            )
+        if eid:
+            return _build_story_event_response(run, eid, ach, hint + season_msg)
 
-        # Тихий день
         food_spent = run.squad_size * DAILY_FOOD_PER_PERSON
         return jsonify({
             "status": "ok", "type": "quiet_day",
-            "message": "День прошёл спокойно. Отряд шёл по тайге.",
-            "deltas": [f"−{food_spent} провизии", "−3 витамина C"],
+            "message": "День прошёл спокойно. Отряд шёл по тайге." + season_msg,
+            "deltas": [f"−{food_spent} провизии"],
             "advisor_hint": hint,
-            "achievements": achievement_messages,
+            "achievements": ach,
             "run": serialize_run(run),
         }), 200
 
@@ -736,8 +725,9 @@ def register_routes(app):
         if err:
             return err
         action_type = data.get("action_type")
-        if action_type not in ("wood", "hunt", "fish", "herbs", "pine", "rest",
-                               "sell_fur", "send_to_tsar", "found_city"):
+        valid = ("wood", "hunt", "fish", "herbs", "pine", "rest",
+                 "berries", "sell_fur", "send_to_tsar", "found_city")
+        if action_type not in valid:
             return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
         user = User.query.filter_by(telegram_id=tg_id).first()
         if not user or not user.run:
@@ -750,38 +740,49 @@ def register_routes(app):
         import random
         from sqlalchemy.orm.attributes import flag_modified
 
+        # Сезон вперёд
+        season_changed = season_mod.advance_season(run)
+
+        # Еда
         _consume_food(run)
-        run.vit_c -= 3
+
+        # Витамин (деградация) — до применения эффекта
+        vitamin_used = action_type in ("pine", "fish", "berries")
+        if not vitamin_used:
+            _tick_vitamin_and_scurvy(run, vitamin_used_today=False)
+
         run.day += 1
         run.warmth = max(0, run.warmth - 5)
+        # Зимой тепло падает быстрее
+        if run.season == 3:
+            run.warmth = max(0, run.warmth - 5)
 
-        if (run.alive_count <= 0 or run.vit_c <= 0
-                or run.morale <= 0
+        # Смерть
+        if (run.alive_count <= 0 or run.morale <= 0
                 or run.hunger_days >= HUNGER_DEATH_DAY):
             reason = None
             if run.alive_count <= 0:
                 reason = "Отряд погиб."
-            elif run.vit_c <= 0:
-                reason = "Цинга выкосила всех."
             elif run.morale <= 0:
                 reason = "Отряд взбунтовался и ушёл."
             elif run.hunger_days >= HUNGER_DEATH_DAY:
                 reason = "Отряд умер от голода."
-            day_died = run.day
-            dist = run.distance_covered
+            d, dist = run.day, run.distance_covered
             user.total_deaths += 1
             db.session.delete(run)
             db.session.commit()
             return jsonify({"status": "game_over", "reason": reason,
-                            "day": day_died, "distance_covered": dist}), 200
+                            "day": d, "distance_covered": dist}), 200
 
         text = ""
         deltas = []
 
         if action_type == "wood":
             amount = random.randint(3, 7)
+            if run.season == 3:  # зимой сухостой мёрзлый
+                amount = max(1, amount - 2)
             run.inventory["wood"] = run.inventory.get("wood", 0) + amount
-            text = "Отряд рубил сухостой весь день. К вечеру хорошая поленница."
+            text = "Отряд рубил сухостой весь день."
             deltas = [f"+{amount} дров"]
 
         elif action_type == "hunt":
@@ -791,45 +792,67 @@ def register_routes(app):
             else:
                 roll = random.random()
                 synergy = hunting_synergy(run.squad_size)
+                mod = season_mod.get_hunt_modifier(run)
                 if roll < 0.5:
                     base = random.randint(*MEAT_PER_DAY)
-                    amount = max(1, int(base * synergy))
+                    amount = max(1, int(base * synergy * mod))
                     run.meat += amount
+                    from app.season import add_vitamin
+                    add_vitamin(run, VIT_FROM_MEAT)
                     text = f"Охотились {run.squad_size} человек. Завалили оленя."
-                    deltas = [f"+{amount} мяса"]
+                    deltas = [f"+{amount} мяса", f"+{VIT_FROM_MEAT} витамина"]
                 elif roll < 0.8:
                     fur_amount = max(1, int(1 * synergy / 2))
                     run.inventory["fur"] = run.inventory.get("fur", 0) + fur_amount
-                    text = f"Охотились {run.squad_size} человек. Повезло на пушного зверя."
+                    text = f"Повезло на пушного зверя."
                     deltas = [f"+{fur_amount} пушнины"]
                 else:
-                    text = "Зверь ушёл. Три часа гнались по ложному следу."
+                    text = "Зверь ушёл."
                     deltas = ["Ничего не добыли"]
 
         elif action_type == "fish":
-            amount = random.randint(*FISH_PER_DAY)
+            mod = season_mod.get_fish_modifier(run)
+            base = random.randint(*FISH_PER_DAY)
+            amount = max(1, int(base * mod))
             run.fish += amount
-            run.vit_c = min(100, run.vit_c + 5)
-            text = "Прорубили лунку, тягали сети. Что-то поймали."
-            deltas = [f"+{amount} рыбы", "+5 к витамину C"]
+            from app.season import add_vitamin
+            add_vitamin(run, VIT_FROM_FISH)
+            text = f"Рыбачили. Улов: {amount}."
+            deltas = [f"+{amount} рыбы", f"+{VIT_FROM_FISH} витамина"]
+
+        elif action_type == "berries":
+            if not season_mod.can_gather_berries(run):
+                text = "Ягоды не растут в это время."
+                deltas = []
+            else:
+                mod = season_mod.get_herbs_modifier(run)
+                amount = max(1, int(random.randint(3, 8) * mod))
+                run.cranberries = run.cranberries + amount
+                from app.season import add_vitamin
+                add_vitamin(run, VIT_FROM_BERRIES)
+                text = "Собирали ягоды весь день."
+                deltas = [f"+{amount} ягод", f"+{VIT_FROM_BERRIES} витамина"]
 
         elif action_type == "herbs":
-            amount = random.randint(1, 4)
+            mod = season_mod.get_herbs_modifier(run)
+            base = random.randint(1, 4)
+            amount = max(1, int(base * mod))
             run.inventory["herbs"] = run.inventory.get("herbs", 0) + amount
-            text = "Собирали травы по склонам весь день."
+            text = "Собирали травы по склонам."
             deltas = [f"+{amount} трав"]
 
         elif action_type == "pine":
-            run.vit_c = min(100, run.vit_c + 15)
-            run.morale = min(100, run.morale + 5)
-            text = "Варили горький отвар хвои. Цинга отступает."
-            deltas = ["+15 к витамину C", "+5 к морали"]
+            from app.season import add_vitamin
+            add_vitamin(run, VIT_FROM_PINE)
+            run.morale = min(100, run.morale + 3)
+            text = "Варили горький отвар хвои."
+            deltas = [f"+{VIT_FROM_PINE} витамина C", "+3 морали"]
 
         elif action_type == "rest":
             run.morale = min(100, run.morale + 15)
             run.warmth = min(100, run.warmth + 10)
             text = "День стояли лагерем. Отряд отдохнул."
-            deltas = ["+15 к морали", "+10 к теплу"]
+            deltas = ["+15 морали", "+10 тепла"]
             for t in run.travelers:
                 if t.alive and t.wounded and t.wounded_days_left > 0:
                     t.wounded_days_left -= 1
@@ -841,13 +864,11 @@ def register_routes(app):
                             if c.is_caretaker and c.caring_for == t.name:
                                 c.is_caretaker = False
                                 c.caring_for = None
-                                deltas.append(f"Освободился: {c.name}")
 
         elif action_type == "sell_fur":
             fur_amount = run.inventory.get("fur", 0)
             if fur_amount <= 0:
                 text = "Пушнины нет."
-                deltas = []
             else:
                 price = FUR_PRICE
                 if run.cities_count > 0:
@@ -856,46 +877,50 @@ def register_routes(app):
                 run.money += revenue
                 run.inventory["fur"] = 0
                 flag_modified(run, "inventory")
-                text = f"Продали {fur_amount} пушнины купцам."
+                text = f"Продали {fur_amount} пушнины."
                 deltas = [f"+{revenue} рублей"]
 
         elif action_type == "send_to_tsar":
             fur_amount = run.inventory.get("fur", 0)
             if fur_amount < FUR_PER_CHARTER:
-                text = f"Нужно минимум {FUR_PER_CHARTER} пушнины для грамоты."
-                deltas = []
+                text = f"Нужно минимум {FUR_PER_CHARTER} пушнины."
             else:
-                charters_earned = fur_amount // FUR_PER_CHARTER
-                fur_spent = charters_earned * FUR_PER_CHARTER
-                run.inventory["fur"] = fur_amount - fur_spent
+                ch = fur_amount // FUR_PER_CHARTER
+                spent = ch * FUR_PER_CHARTER
+                run.inventory["fur"] = fur_amount - spent
                 if run.inventory["fur"] <= 0:
                     del run.inventory["fur"]
-                run.charters += charters_earned
-                run.total_fur_sent += fur_spent
+                run.charters += ch
+                run.total_fur_sent += spent
                 flag_modified(run, "inventory")
-                text = f"Отправили {fur_spent} пушнины в Москву."
-                deltas = [f"+{charters_earned} грамот"]
+                text = f"Отправили {spent} пушнины в Москву."
+                deltas = [f"+{ch} грамот"]
 
         elif action_type == "found_city":
             cost = city_charter_cost(run.cities_count)
             if run.charters < cost:
                 text = f"Нужно {cost} грамот. У тебя {run.charters}."
-                deltas = []
             else:
                 run.charters -= cost
                 run.cities_count += 1
                 run.morale = min(100, run.morale + 20)
-                text = f"Основан новый город. Всего городов: {run.cities_count}."
-                deltas = [f"−{cost} грамот", "+20 Мораль"]
+                text = f"Основан город. Всего: {run.cities_count}."
+                deltas = [f"−{cost} грамот", "+20 морали"]
 
-        achievement_messages = []
-        check_achievements(user, run, achievement_messages)
+        # Витамин и цинга — после действия, если использовали источник
+        if vitamin_used:
+            _tick_vitamin_and_scurvy(run, vitamin_used_today=True)
+
+        # Достижения
+        ach = []
+        check_achievements(user, run, ach)
         flag_modified(user, "achievements")
 
         food_spent = run.squad_size * DAILY_FOOD_PER_PERSON
         deltas.append(f"−{food_spent} провизии")
-        deltas.append("−3 витамина C")
         deltas.append("−5 тепла")
+        if season_changed:
+            deltas.append(f"Наступила {season_changed.lower()}")
 
         flag_modified(run, "inventory")
         hint = get_advisor_hint(run)
@@ -906,7 +931,7 @@ def register_routes(app):
             "action_type": action_type,
             "narrative": text, "deltas": deltas,
             "advisor_hint": hint,
-            "achievements": achievement_messages,
+            "achievements": ach,
             "run": serialize_run(run),
         }), 200
 
@@ -918,12 +943,10 @@ def register_routes(app):
             return err
         user = User.query.filter_by(telegram_id=tg_id).first()
         if not user or not user.run:
-            return jsonify({"status": "error",
-                            "message": "Нет активной экспедиции"}), 404
+            return jsonify({"status": "error", "message": "Нет активной экспедиции"}), 404
         run = user.run
         if "game_won" not in (run.tags or []):
-            return jsonify({"status": "error",
-                            "message": "Поход ещё не завершён"}), 400
+            return jsonify({"status": "error", "message": "Поход ещё не завершён"}), 400
         return jsonify({
             "status": "ok",
             "epilogue": _build_epilogue(run, user),

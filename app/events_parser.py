@@ -5,7 +5,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.extensions import db
 from app.events_loader import get_event
-from app.constants import (MAX_VIT_C, MAX_MORALE, MAX_WARMTH)
+from app.constants import MAX_VIT_C, MAX_MORALE, MAX_WARMTH
 
 
 _ITEM_NAMES = {
@@ -15,10 +15,11 @@ _ITEM_NAMES = {
     "lancet": "ланцетов", "silver_cross": "серебряных крестов",
     "bear_skin": "медвежьих шкур", "wolf_skin": "волчьих шкур",
     "wolf_cub": "волчат", "dog_sled": "собачьих упряжек",
+    "cranberries": "ягод",
 }
 
 
-# Разрешённые флаги и их типы для set_flags.
+# Флаги, которые можно устанавливать через JSON set_flags.
 _FLAG_TYPES = {
     "isker_status": str,
     "siege_days_left": int,
@@ -32,10 +33,15 @@ _FLAG_TYPES = {
     "volhovsky_alive": bool,
     "volhovsky_healed": bool,
     "noble_title": str,
+    "scurvy_active": bool,
+    "days_without_vit": int,
+    "season": int,
+    "season_day": int,
 }
 
 
 def _progress_scurvy(run):
+    """Прогрессия цинги. Один боец заболевает."""
     healthy = [t for t in run.travelers
                if t.alive and not t.scurvy and not t.wounded]
     if not healthy:
@@ -45,9 +51,19 @@ def _progress_scurvy(run):
     return t.name
 
 
+def _cure_all_scurvy(run):
+    """Лечит всех больных цингой. Сбрасывает scurvy_active."""
+    for t in run.travelers:
+        if t.alive and t.scurvy:
+            t.scurvy = False
+            t.scurvy_refused = False
+            t.scurvy_healer_seen = False
+    run.scurvy_active = False
+
+
 def _has_doctor(run):
-    return any(t.is_doctor and t.alive and not t.wounded and not t.is_caretaker
-               for t in run.travelers)
+    return any(t.is_doctor and t.alive and not t.wounded
+               and not t.is_caretaker for t in run.travelers)
 
 
 def _pick_caretaker(run, exclude_name):
@@ -58,6 +74,7 @@ def _pick_caretaker(run, exclude_name):
 
 
 def _wound_random_traveler(run):
+    """Снимает выносливость. При 0 — ранение с сиделкой."""
     healthy = [t for t in run.travelers
                if t.alive and not t.wounded and not t.is_caretaker]
     if healthy:
@@ -75,7 +92,6 @@ def _wound_random_traveler(run):
                 t.wounded_days_left = days * 2
             return ("wound", t.name)
         return (None, t.name)
-
     wounded = [t for t in run.travelers if t.alive and t.wounded]
     if wounded:
         t = random.choice(wounded)
@@ -97,6 +113,7 @@ def _snapshot_run(run):
         "warmth": run.warmth, "discipline": run.discipline,
         "money": run.money, "charters": run.charters,
         "flour": run.flour, "fish": run.fish, "meat": run.meat,
+        "cranberries": run.cranberries,
         "inventory": dict(run.inventory),
         "travelers": [
             {"name": t.name, "endurance": t.endurance,
@@ -125,7 +142,8 @@ def _build_consequences(snap_before, run, choice_data):
         sign = "+" if d > 0 else "−"
         deltas.append(f"{sign}{abs(d)} {name}")
 
-    for field, name in (("flour", "муки"), ("fish", "рыбы"), ("meat", "мяса")):
+    for field, name in (("flour", "муки"), ("fish", "рыбы"),
+                        ("meat", "мяса"), ("cranberries", "ягод")):
         before = snap_before.get(field, 0)
         after = getattr(run, field, 0)
         if before != after:
@@ -175,8 +193,17 @@ def _apply_stats(run, stats_diff):
     if not stats_diff:
         return
     cure_flag = stats_diff.pop("cure_scurvy", 0)
+    add_vit = stats_diff.pop("add_vitamin", 0)
+
     if "vit_c" in stats_diff:
-        run.vit_c = max(0, min(run.vit_c + stats_diff["vit_c"], MAX_VIT_C))
+        # ВАЖНО: если vit_c положительный — это источник витамина.
+        # Сбрасываем days_without_vit через season.add_vitamin.
+        delta = stats_diff["vit_c"]
+        if delta > 0:
+            from app.season import add_vitamin
+            add_vitamin(run, delta)
+        else:
+            run.vit_c = max(0, run.vit_c + delta)
     if "morale" in stats_diff:
         run.morale = max(0, min(run.morale + stats_diff["morale"], MAX_MORALE))
     if "warmth" in stats_diff:
@@ -198,12 +225,25 @@ def _apply_stats(run, stats_diff):
     if "endurance" in stats_diff and stats_diff["endurance"] < 0:
         for _ in range(abs(stats_diff["endurance"])):
             _wound_random_traveler(run)
+
+    # Явный флаг "добавить витамин" — использовать сезонную логику
+    if add_vit:
+        from app.season import add_vitamin
+        add_vitamin(run, add_vit)
+
+    # cure_scurvy: лечит N больных и сбрасывает scurvy_active
     if cure_flag:
-        sick = [t for t in run.travelers if t.alive and t.scurvy]
-        for t in sick[:cure_flag]:
-            t.scurvy = False
-            t.scurvy_refused = False
-            t.scurvy_healer_seen = False
+        if cure_flag >= 99:
+            _cure_all_scurvy(run)
+        else:
+            sick = [t for t in run.travelers if t.alive and t.scurvy]
+            for t in sick[:cure_flag]:
+                t.scurvy = False
+                t.scurvy_refused = False
+                t.scurvy_healer_seen = False
+            if not any(t.alive and t.scurvy for t in run.travelers):
+                run.scurvy_active = False
+                run.days_without_vit = 0
 
 
 def _apply_flags(run, flags):
@@ -250,16 +290,20 @@ def _check_conditions(run, conditions):
     required = conditions.get("items_required") or {}
     for item, qty in required.items():
         if run.inventory.get(item, 0) < qty:
-            return False, f"Не хватает предмета: {item}"
+            return False, f"Не хватает: {item} × {qty}"
     for tag in conditions.get("tags_required") or []:
         if tag not in run.tags:
-            return False, f"Не хватает условия: {tag}"
+            return False, f"Нужно условие: {tag}"
     for stat, min_val in (conditions.get("stats_min") or {}).items():
         if getattr(run, stat, 0) < min_val:
             return False, f"Слишком низкий {stat}"
     for stat, max_val in (conditions.get("stats_max") or {}).items():
         if getattr(run, stat, 0) > max_val:
             return False, f"Слишком высокий {stat}"
+    # Сезонные условия
+    if "season_in" in conditions:
+        if run.season not in conditions["season_in"]:
+            return False, "Не тот сезон"
     return True, None
 
 
