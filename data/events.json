@@ -3,14 +3,14 @@
     "title": "Буран",
     "text": "Ветер сбивает с ног, костёр не разжечь, сани вязнут. Идти дальше или переждать.",
     "weight": 30,
-    "trigger_conditions": {"min_day": 2},
+    "trigger_conditions": {"min_day": 2 "season_in": [3]},
     "choices": [
-      {"choice_id": "push_through", "text": "Идти напролом", "conditions": {}, "effects": {"stats": {"flour": -20, "warmth": -15, "morale": -5}, "items_add": {}, "items_remove": []}, "consequences": "Шли весь день. К вечеру отряд вымотан."},
+      {"choice_id": "push_through", "text": "Идти сквозь буран", "conditions": {}, "effects": {"stats": {"flour": -20, "warmth": -15, "morale": -5}, "items_add": {}, "items_remove": []}, "consequences": "Шли весь день. К вечеру отряд вымотан."},
       {"choice_id": "wait_it_out", "text": "Переждать в овраге", "conditions": {}, "effects": {"stats": {"flour": -15, "warmth": -5, "morale": -10}, "items_add": {}, "items_remove": []}, "consequences": "Просидели сутки. День потерян."},
       {"choice_id": "big_fire", "text": "Жечь костёр в укрытии", "conditions": {"items_required": {"wood": 3}}, "effects": {"stats": {"flour": -10, "warmth": 10, "morale": 10}, "items_add": {}, "items_remove": ["wood", "wood", "wood"]}, "consequences": "Нашли ложбину, жгли костёр всю ночь. Одежда высохла."}
     ]
   },
-
+  
   "event_scurvy_start": {
     "title": "Цинга",
     "text": "У казаков распухли и кровоточат дёсны. Старые раны начали кровить. Восемь недель без свежих источников витамина.",
@@ -29,7 +29,7 @@
     "title": "Вмёрзший лось",
     "text": "Вмёрзшая в лёд туша лося. Мясо твёрдое как камень. Оттаять можно только костром.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 3},
+    "trigger_conditions": {"min_day": 3, season_in": [3]},
     "choices": [
       {"choice_id": "thaw_it", "text": "Оттаивать у костра", "conditions": {"items_required": {"wood": 4}}, "effects": {"stats": {"flour": -10, "morale": 5, "meat": 5}, "items_add": {}, "items_remove": ["wood", "wood", "wood", "wood"]}, "consequences": "Разделали тушу. Пять кусков мяса в запас."},
       {"choice_id": "salt_meat", "text": "Засолить мясо", "conditions": {"items_required": {"wood": 2, "salt": 1}}, "effects": {"stats": {"flour": -5, "morale": 10, "meat": 6}, "items_add": {}, "items_remove": ["wood", "wood", "salt"]}, "consequences": "Солили два дня. Шесть кусков в запас."},
@@ -51,7 +51,7 @@
     "title": "Оттепель",
     "text": "Река потемнела, лёд тонкий. Перейти или обойти.",
     "weight": 30,
-    "trigger_conditions": {"min_day": 4},
+    "trigger_conditions": {"min_day": 4, season_in": [0]},
     "choices": [
       {"choice_id": "cross_river", "text": "Перейти по льду", "conditions": {}, "effects": {"stats": {"flour": -8, "warmth": 10, "morale": 5}, "tags_add": ["crossed_thin_ice"], "items_add": {}, "items_remove": []}, "consequences": "Шли гуськом, сани на руках. Перешли."},
       {"choice_id": "go_around", "text": "Обойти берегом", "conditions": {}, "effects": {"stats": {"flour": -20, "warmth": 10}, "items_add": {}, "items_remove": []}, "consequences": "Обход десять вёрст."}
@@ -62,7 +62,7 @@
     "title": "Медвежья берлога",
     "text": "Берлога шатуна. Внутри живой зверь. Не спит, голоден.",
     "weight": 20,
-    "trigger_conditions": {"min_day": 8, "min_squad": 4},
+    "trigger_conditions": {"min_day": 8, "min_squad": 4, "season_in": [3, 0]},
     "choices": [
       {"choice_id": "attack", "text": "Идти с рогатиной", "conditions": {}, "effects": {"stats": {"flour": -15, "morale": 15, "endurance": -1, "meat": 4}, "tags_add": ["killed_bear"], "items_add": {"bear_skin": 1}, "items_remove": []}, "consequences": "Медведя убили. Один казак получил удар лапой."},
       {"choice_id": "smoke_out", "text": "Выкурить дымом", "conditions": {"items_required": {"wood": 4}}, "effects": {"stats": {"flour": -10, "morale": 5}, "items_add": {}, "items_remove": ["wood", "wood", "wood", "wood"]}, "consequences": "Дым пошёл в дыру. Медведь ушёл."},
@@ -87,7 +87,7 @@
     "text": "Под снегом человек в русской одежде. При нём берестяной туесок.",
     "weight": 15,
     "is_unique": true,
-    "trigger_conditions": {"min_day": 10},
+    "trigger_conditions": {"min_day": 10, "season_in": [3]},
     "choices": [
       {"choice_id": "read", "text": "Прочитать грамотку", "conditions": {}, "effects": {"stats": {"morale": 5}, "tags_add": ["read_letter"], "items_add": {}, "items_remove": []}, "next_event": "event_frozen_corpse_letter", "consequences": "В туеске письмо."},
       {"choice_id": "loot", "text": "Забрать припасы", "conditions": {}, "effects": {"stats": {"morale": -10}, "tags_add": ["robbed_corpse"], "items_add": {"salt": 2, "herbs": 2, "wood": 3, "lancet": 1}, "items_remove": []}, "consequences": "Сняли тулуп, взяли кисет и нож."},
@@ -176,7 +176,7 @@
     "title": "Волчья стая",
     "text": "Ночью волки у лагеря. Не меньше десяти. Один казак не вернулся с обхода.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 5},
+    "trigger_conditions": {"min_day": 5, "season_in": [2, 3]},
     "choices": [
       {"choice_id": "fire", "text": "Жечь костры всю ночь", "conditions": {"items_required": {"wood": 3}}, "effects": {"stats": {"flour": -10, "morale": -10, "endurance": -1}, "tags_add": ["lost_kazak"], "items_add": {}, "items_remove": ["wood", "wood", "wood"]}, "consequences": "Жгли три костра. Утром нашли казака израненным."},
       {"choice_id": "hunt", "text": "Идти на волков", "conditions": {}, "effects": {"stats": {"flour": -15, "morale": 5, "endurance": -1}, "tags_add": ["killed_wolves"], "items_add": {"fur": 2}, "items_remove": []}, "consequences": "Убили двух волков. Один казак получил рану."},
@@ -212,7 +212,7 @@
     "title": "Белые пальцы",
     "text": "Иван провалился в полынью. Руки белые. Пальцы не сгибаются.",
     "weight": 20,
-    "trigger_conditions": {"min_day": 5},
+    "trigger_conditions": {"min_day": 5, "season_in": [3, 0]},
     "choices": [
       {"choice_id": "warm_water", "text": "Отогревать в воде", "conditions": {"items_required": {"wood": 3}}, "effects": {"stats": {"flour": -10, "morale": 10, "endurance": -1}, "tags_add": ["healed_frostbite"], "items_add": {}, "items_remove": ["wood", "wood", "wood"]}, "consequences": "Сначала холодная, потом тёплая. Пальцы начнут двигаться через день."},
       {"choice_id": "rub_snow", "text": "Растереть снегом", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": -20, "endurance": -3}, "no_funeral": true, "tags_add": ["frostbite_death"], "items_add": {}, "items_remove": []}, "consequences": "Кожа слезла, началась гангрена. Через два дня умер."}
@@ -254,7 +254,7 @@
     "title": "Уральский перевал",
     "text": "Камень стеной. Узкая тропа вверх. Или обход по долине.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 2, "max_day": 15},
+    "trigger_conditions": {"min_day": 2, "max_day": 15, "season_in": [0, 1, 2]},
     "choices": [
       {"choice_id": "climb", "text": "Идти через перевал", "conditions": {}, "effects": {"stats": {"flour": -25, "warmth": -15, "morale": 5}, "items_add": {}, "items_remove": []}, "consequences": "Тащили струги на верёвках. Один сорвался, поймали."},
       {"choice_id": "around", "text": "Обойти долиной", "conditions": {}, "effects": {"stats": {"flour": -15, "warmth": -5}, "items_add": {}, "items_remove": []}, "consequences": "Шли вдоль реки три дня."}
@@ -265,7 +265,7 @@
     "title": "Соляной источник",
     "text": "Белый налёт на камнях. Солёный ключ. Можно выварить соль.",
     "weight": 15,
-    "trigger_conditions": {"min_day": 3},
+    "trigger_conditions": {"min_day": 3, "season_in": [0, 1]},
     "choices": [
       {"choice_id": "boil_all_day", "text": "Вываривать весь день", "conditions": {"items_required": {"wood": 2}}, "effects": {"stats": {"flour": -15, "warmth": -5, "salt": 5}, "items_add": {}, "items_remove": ["wood", "wood"]}, "consequences": "Пять мешочков соли."},
       {"choice_id": "little", "text": "Набрать горсть", "conditions": {}, "effects": {"stats": {"flour": -5, "salt": 1}, "items_add": {}, "items_remove": []}, "consequences": "Хватит на один засол."}
@@ -276,7 +276,7 @@
     "title": "Снежная слепота",
     "text": "Трое ослепли от солнца. Глаза горят.",
     "weight": 20,
-    "trigger_conditions": {"min_day": 4, "min_squad": 4},
+    "trigger_conditions": {"min_day": 4, "min_squad": 4, "season_in": [3]},
     "choices": [
       {"choice_id": "wait", "text": "Стоять лагерем 2 дня", "conditions": {}, "effects": {"stats": {"flour": -20, "morale": -5, "endurance": -3}, "items_add": {}, "items_remove": []}, "consequences": "Через два дня начнут видеть."},
       {"choice_id": "blindfold", "text": "Повязать глаза и идти", "conditions": {}, "effects": {"stats": {"flour": -15, "morale": -15, "endurance": -2}, "no_funeral": true, "tags_add": [], "items_add": {}, "items_remove": []}, "consequences": "Один упал в полынью. Умер к утру."}
@@ -299,7 +299,7 @@
     "title": "Волчата",
     "text": "В норе три слепых волчонка. Мать ушла на охоту.",
     "weight": 15,
-    "trigger_conditions": {"min_day": 6},
+    "trigger_conditions": {"min_day": 6, "season_in": [0]},
     "choices": [
       {"choice_id": "keep", "text": "Забрать с собой", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": 5}, "tags_add": ["has_wolves"], "items_add": {"wolf_cub": 3}, "items_remove": []}, "consequences": "Несли за пазухой. Грелись о них."},
       {"choice_id": "kill", "text": "Прирезать на мясо", "conditions": {}, "effects": {"stats": {"meat": 2, "morale": -10}, "items_add": {}, "items_remove": []}, "consequences": "Мясо нежное. Ели молча."},
@@ -311,7 +311,7 @@
     "title": "Лёд треснул",
     "text": "Двое ушли в полынью по грудь. Одежда промокла насквозь.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 3},
+    "trigger_conditions": {"min_day": 2, "season_in": [0]},
     "choices": [
       {"choice_id": "back_to_camp", "text": "Вернуться к старому лагерю", "conditions": {}, "effects": {"stats": {"flour": -15, "warmth": 5, "morale": -5, "endurance": -2}, "items_add": {}, "items_remove": []}, "consequences": "Разожгли костёр заново. Двое отходят."},
       {"choice_id": "push", "text": "Идти дальше", "conditions": {}, "effects": {"stats": {"flour": -20, "warmth": -20, "morale": -10, "endurance": -3}, "items_add": {}, "items_remove": []}, "consequences": "Один начал кашлять кровью."}
@@ -344,7 +344,7 @@
     "title": "Медвежьи следы",
     "text": "Свежие следы. Медведь впереди, на той же тропе.",
     "weight": 20,
-    "trigger_conditions": {"min_day": 5},
+    "trigger_conditions": {"min_day": 5, "season_in": [0, 1, 2]},
     "choices": [
       {"choice_id": "change_path", "text": "Свернуть с тропы", "conditions": {}, "effects": {"stats": {"flour": -20, "morale": -5}, "items_add": {}, "items_remove": []}, "consequences": "Обошли по глубокому снегу."},
       {"choice_id": "chase", "text": "Идти по следу", "conditions": {}, "effects": {"stats": {"flour": -15, "morale": 10, "endurance": -1, "meat": 5}, "tags_add": ["hunted_bear"], "items_add": {"bear_skin": 1}, "items_remove": []}, "consequences": "Убили медведя. Один казак получил удар лапой."},
@@ -356,7 +356,7 @@
     "title": "Брошенный струг",
     "text": "Полузатопленный струг. Внутри сухари, топор, вёсла.",
     "weight": 15,
-    "trigger_conditions": {"min_day": 4},
+    "trigger_conditions": {"min_day": 4, "season_in": [0, 1, 2]},
     "choices": [
       {"choice_id": "repair", "text": "Починить", "conditions": {"items_required": {"wood": 2}}, "effects": {"stats": {"flour": -15, "morale": 10, "fish": 3, "salt": 1}, "items_add": {}, "items_remove": ["wood", "wood"]}, "consequences": "Заткнули пробоину."},
       {"choice_id": "loot", "text": "Забрать припасы", "conditions": {}, "effects": {"stats": {"meat": 2, "morale": 5}, "items_add": {"wood": 3}, "items_remove": []}, "consequences": "Выгребли всё. Лодку бросили."},
@@ -390,7 +390,7 @@
     "title": "Крестный ход",
     "text": "Отец Никифор предложил обойти лагерь с иконой.",
     "weight": 15,
-    "trigger_conditions": {"min_day": 4},
+    "trigger_conditions": {"min_day": 4, "season_in": [3]},
     "choices": [
       {"choice_id": "process", "text": "Идти полным чином", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": 15, "discipline": 5}, "tags_add": ["protected_by_prayer"], "items_add": {}, "items_remove": []}, "consequences": "Обходили трижды. Пели тропарь."},
       {"choice_id": "quick", "text": "Коротко помолиться", "conditions": {}, "effects": {"stats": {"flour": -5, "morale": 5}, "items_add": {}, "items_remove": []}, "consequences": "Прочли короткую молитву."}
@@ -412,6 +412,7 @@
     "title": "Чувашский мыс",
     "text": "Впереди Искер. Столица Кучума. На Чувашском мысу войско Маметкула. Копья, луки, кони. За ними город с тройным валом.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 3, "season_in": [2]},
     "choices": [
       {"choice_id": "night_assault", "text": "Ночной штурм", "conditions": {}, "effects": {"stats": {"flour": -25, "morale": 10, "endurance": -2}, "set_flags": {"isker_status": "taken"}, "tags_add": ["chuvash_night"], "items_add": {}, "items_remove": []}, "consequences": "Шли в темноте без факелов. Застали врасплох. Двое казаков погибли."},
       {"choice_id": "frontal", "text": "Лобовая атака", "conditions": {}, "effects": {"stats": {"flour": -20, "morale": 15, "endurance": -3}, "set_flags": {"isker_status": "taken"}, "tags_add": ["chuvash_frontal"], "items_add": {}, "items_remove": []}, "consequences": "Пищали дали залп. Татары дрогнули. Пятеро казаков остались на мысу."},
@@ -423,6 +424,7 @@
     "title": "Искер взят",
     "text": "Кучум бежал в степь. Маметкул в Барабу. Искер пуст. Вал, мечеть, ханский дворец. Татары вернутся.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 9, "season_in": [2]},
     "choices": [
       {"choice_id": "garrison", "text": "Оставить гарнизон", "conditions": {}, "effects": {"stats": {"morale": 15, "discipline": 5}, "set_flags": {"isker_status": "taken"}, "tags_add": ["isker_garrison"], "items_add": {}, "items_remove": []}, "consequences": "Оставили двух бойцов и десяток стрельцов. Искер стал русским острогом."},
       {"choice_id": "burn", "text": "Сжечь и идти дальше", "conditions": {}, "effects": {"stats": {"morale": -10, "discipline": 5}, "set_flags": {"isker_status": "abandoned"}, "tags_add": ["isker_burned"], "items_add": {}, "items_remove": []}, "consequences": "Подожгли мечеть и дворец."},
@@ -456,7 +458,7 @@
     "title": "Вогульское стойбище",
     "text": "В лесу дым. Вогулы сушат мясо. Князь Аблегирим старый, злой.",
     "weight": 25,
-    "trigger_conditions": {"min_day": 15},
+    "trigger_conditions": {"min_day": 15, "season_in": [0, 2, 3]},
     "choices": [
       {"choice_id": "fight", "text": "Идти на бой", "conditions": {}, "effects": {"stats": {"endurance": -2, "meat": 4, "morale": 5}, "tags_add": ["vogul_fought"], "items_add": {"fur": 3}, "items_remove": []}, "consequences": "Аблегирим поставил стрелков. Двое ранены, вогулы разбиты."},
       {"choice_id": "trade", "text": "Обменять товары", "conditions": {}, "effects": {"stats": {"flour": -5, "meat": 3, "morale": 5}, "tags_add": ["vogul_trade"], "items_add": {}, "items_remove": ["salt"]}, "consequences": "Отдали соль. Взяли мясо."},
@@ -515,6 +517,7 @@
     "title": "Осада",
     "text": "Карача пришёл. Мурза, советник Кучума. Две тысячи конных и пеших. Обошли Искер, встали вокруг.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 4, "season_in": [2]},
     "choices": [
       {"choice_id": "hold", "text": "Держаться", "conditions": {}, "effects": {"stats": {"discipline": 10, "morale": -5}, "set_flags": {"isker_status": "under_siege", "siege_days_left": 12}, "tags_add": ["siege_hold"], "items_add": {}, "items_remove": []}, "consequences": "Ермак собрал круг. Сидим. Вал укрепили."},
       {"choice_id": "break_out", "text": "Прорываться сейчас", "conditions": {}, "effects": {"stats": {"flour": -25, "morale": -15, "endurance": -3}, "set_flags": {"isker_status": "abandoned", "siege_result": "broke_through"}, "tags_add": ["siege_broke_out"], "items_add": {}, "items_remove": []}, "consequences": "Пошли на прорыв. Пробились. Искер брошен."}
@@ -536,6 +539,7 @@
     "title": "Приступ",
     "text": "Карача пошёл на приступ. Татары поднесли к валу хворост, облитый смолой. Огонь пошёл по стене.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 6, "season_in": [2]},
     "choices": [
       {"choice_id": "fight_fire", "text": "Тушить и драться", "conditions": {}, "effects": {"stats": {"flour": -15, "endurance": -3, "morale": -5}, "tags_add": ["fire_fought"], "items_add": {}, "items_remove": []}, "consequences": "Таскали воду. К утру отбились. Семеро казаков погибли."},
       {"choice_id": "counter", "text": "Контрудар через пролом", "conditions": {"stats_min": {"squad_size": 5}}, "effects": {"stats": {"flour": -10, "endurance": -4, "morale": 10}, "tags_add": ["counter_attack"], "items_add": {}, "items_remove": []}, "consequences": "Как стена рухнула, ударили в пролом. Ермак ранен в плечо."},
@@ -558,6 +562,7 @@
     "title": "Конец осады",
     "text": "Двенадцатый день. Карача снял часть войска и ушёл в степь. Осталось пять сотен на виду.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 8, "season_in": [2]},
     "choices": [
       {"choice_id": "attack", "text": "Ударить и добить", "conditions": {"stats_min": {"squad_size": 4}}, "effects": {"stats": {"flour": -15, "endurance": -2, "morale": 20, "meat": 3}, "set_flags": {"isker_status": "relieved", "siege_result": "karacha_left", "siege_days_left": 0}, "tags_add": ["siege_won"], "items_add": {"fur": 3}, "items_remove": []}, "consequences": "Вышли все, кто мог держать оружие. Татары бежали."},
       {"choice_id": "wait", "text": "Ждать, пока уйдут", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": 5}, "set_flags": {"isker_status": "relieved", "siege_result": "karacha_left", "siege_days_left": 0}, "tags_add": ["siege_won"], "items_add": {}, "items_remove": []}, "consequences": "Сидели ещё два дня. Татары ушли сами."},
@@ -580,6 +585,7 @@
     "title": "Волховский болен",
     "text": "Зима. Цинга косит всех. Князь Волховский слег. Дёсны синие, ноги пухнут. Не встаёт.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 4, "season_in": [3]},
     "choices": [
       {"choice_id": "full_care", "text": "Лечить всем, что есть", "conditions": {"items_required": {"herbs": 2, "cranberries": 1}}, "effects": {"stats": {"flour": -20, "morale": 10}, "set_flags": {"volhovsky_healed": true, "volhovsky_alive": true}, "tags_add": ["volhovsky_in_bed"], "items_add": {}, "items_remove": ["herbs", "herbs", "cranberries"]}, "consequences": "Отец Никифор варил отвар хвои. Через пять дней Волховский встаёт."},
       {"choice_id": "pine_only", "text": "Только хвойный отвар", "conditions": {}, "effects": {"stats": {"flour": -10, "morale": 5}, "set_flags": {"volhovsky_healed": false, "volhovsky_alive": false}, "tags_add": ["volhovsky_in_bed"], "items_add": {}, "items_remove": []}, "consequences": "Поили отваром. Через неделю умер."},
@@ -592,6 +598,7 @@
     "title": "Волховский встал",
     "text": "Семь дней. Волховский на ногах. Слабый, худой, живой. Сказал: пиши грамоту, я поеду в Москву.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 4, "season_in": [3]},
     "choices": [
       {"choice_id": "write_letter", "text": "Написать грамоту и отправить", "conditions": {}, "effects": {"stats": {"charters": 15, "morale": 20, "discipline": 5}, "set_flags": {"volhovsky_healed": true}, "tags_add": ["volhovsky_went_moscow"], "items_add": {}, "items_remove": []}, "consequences": "Писали всю ночь. Волховский уехал на рассвете."},
       {"choice_id": "send_koltso_too", "text": "Отправить Ивана Кольцо вместе с ним", "conditions": {"tags_required": ["koltso_alive"]}, "effects": {"stats": {"charters": 20, "morale": 25, "discipline": -5}, "set_flags": {"volhovsky_healed": true}, "tags_add": ["volhovsky_went_moscow", "koltso_in_moscow"], "items_add": {}, "items_remove": []}, "consequences": "Иван Кольцо поехал вместе."},
@@ -603,6 +610,7 @@
     "title": "Ночь на Вагае",
     "text": "Отряд на берегу Вагая. Дождь. Ветер. Ермак спит у костра. Кучум где-то рядом.",
     "chain_only": true,
+    "trigger_conditions": {"min_day": 4, "season_in": [1]},
     "choices": [
       {"choice_id": "set_watch", "text": "Выставить усиленную стражу", "conditions": {}, "effects": {"stats": {"flour": -10, "endurance": -1, "morale": 5}, "set_flags": {"ermak_alive": true, "leader": "ermak"}, "tags_add": ["ermak_alive", "watch_set"], "items_add": {}, "items_remove": []}, "consequences": "Караулы в три кольца. Ночью татары пришли. Их заметили. Ермак жив."},
       {"choice_id": "warn_ermak", "text": "Разбудить и предупредить", "conditions": {}, "effects": {"stats": {"morale": 5}, "set_flags": {"ermak_alive": true, "leader": "ermak"}, "tags_add": ["ermak_alive", "ermak_warned"], "items_add": {}, "items_remove": []}, "consequences": "Разбудили Ермака. Перешёл в другой лагерь. Ермак жив."},

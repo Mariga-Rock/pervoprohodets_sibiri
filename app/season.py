@@ -1,7 +1,7 @@
 """
 Сезоны и витамин C.
 
-Сезон: 15 дней. Весна → лето → осень → зима → весна.
+Сезон: 7 дней. Весна → лето → осень → зима → весна.
 Витамин C: ступенчатая деградация. Через 56 дней — цинга.
 """
 from app.constants import (
@@ -15,19 +15,29 @@ from app.constants import (
 def advance_season(run):
     """
     Увеличивает день сезона. Если сезон кончился — переключает.
-    Возвращает имя нового сезона или None, если смены не было.
+    При переходе зима → весна увеличивает год.
+    Возвращает строку с новым сезоном/годом или None.
     """
     run.season_day += 1
     if run.season_day > SEASON_LENGTH:
         run.season_day = 1
+        old_season = run.season
         run.season = (run.season + 1) % 4
-        return SEASON_NAMES[run.season]
+        # Зима → весна = новый год
+        if old_season == 3 and run.season == 0:
+            run.year += 1
+            return f"Наступил {run.year}-й год. Весна."
+        return f"Наступила {SEASON_NAMES[run.season].lower()}."
     return None
+
+
+def is_winter(run):
+    return run.season == 3
 
 
 def season_name(run):
     return SEASON_NAMES.get(run.season, "?")
-
+    
 
 def degrade_vit_c(run):
     """

@@ -1,4 +1,4 @@
-"""Модели базы данных."""
+"""Модели базы данных. User, Run, Traveler."""
 from datetime import datetime
 from app.extensions import db
 
@@ -28,13 +28,15 @@ class Run(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
                         nullable=False, unique=True)
 
+    # ---- ВРЕМЯ ----
     day = db.Column(db.Integer, default=1)
-    distance_covered = db.Column(db.Integer, default=0)
-
-    # ---- СЕЗОНЫ ----
+    year = db.Column(db.Integer, default=1)
     # season: 0=весна, 1=лето, 2=осень, 3=зима
-    season = db.Column(db.Integer, default=1)  # старт летом
-    season_day = db.Column(db.Integer, default=1)  # 1..15
+    season = db.Column(db.Integer, default=2)  # старт осенью
+    season_day = db.Column(db.Integer, default=1)  # 1..7
+
+    # ---- ПУТЬ ----
+    distance_covered = db.Column(db.Integer, default=0)
 
     # ---- ПРОВИЗИЯ ----
     flour = db.Column(db.Integer, default=300)
@@ -47,6 +49,7 @@ class Run(db.Model):
     vit_c = db.Column(db.Integer, default=100)
     days_without_vit = db.Column(db.Integer, default=0)
     scurvy_active = db.Column(db.Boolean, default=False)
+    scurvy_recovery_days = db.Column(db.Integer, default=0)
     morale = db.Column(db.Integer, default=100)
     warmth = db.Column(db.Integer, default=100)
     discipline = db.Column(db.Integer, default=70)
@@ -71,9 +74,12 @@ class Run(db.Model):
     volhovsky_alive = db.Column(db.Boolean, default=False)
     volhovsky_healed = db.Column(db.Boolean, default=False)
 
+    # ---- СЛУЖЕБНОЕ ----
     has_priest = db.Column(db.Boolean, default=True)
     last_advisor_day = db.Column(db.Integer, default=0)
+    milestones_shown = db.Column(db.JSON, default=list)
 
+    # ---- ИНВЕНТАРЬ И ТЕГИ ----
     inventory = db.Column(db.JSON, default=dict)
     tags = db.Column(db.JSON, default=list)
     recent_events = db.Column(db.JSON, default=list)
@@ -85,21 +91,27 @@ class Run(db.Model):
     travelers = db.relationship('Traveler', backref='run',
                                 cascade='all, delete-orphan', lazy='select')
 
+    # ---- ВЫЧИСЛЯЕМЫЕ ПОЛЯ ----
+
     @property
     def squad_size(self):
+        """Сколько бойцов могут идти (живые, не раненые, не сиделки)."""
         return sum(1 for t in self.travelers
                    if t.alive and not t.wounded and not t.is_caretaker)
 
     @property
     def wounded(self):
+        """Сколько раненых."""
         return sum(1 for t in self.travelers if t.alive and t.wounded)
 
     @property
     def caretaker_count(self):
+        """Сколько сиделок при раненых."""
         return sum(1 for t in self.travelers if t.alive and t.is_caretaker)
 
     @property
     def alive_count(self):
+        """Всего живых (включая раненых и сиделок)."""
         return sum(1 for t in self.travelers if t.alive)
 
     def __repr__(self):
@@ -113,6 +125,7 @@ class Traveler(db.Model):
     run_id = db.Column(db.Integer, db.ForeignKey('runs.id'),
                        nullable=False, index=True)
     name = db.Column(db.String(64), nullable=False)
+
     hunting = db.Column(db.Integer, default=4)
     endurance_max = db.Column(db.Integer, default=5)
     endurance = db.Column(db.Integer, default=5)
@@ -124,6 +137,7 @@ class Traveler(db.Model):
 
     wounded = db.Column(db.Boolean, default=False)
     wounded_days_left = db.Column(db.Integer, default=0)
+
     is_caretaker = db.Column(db.Boolean, default=False)
     caring_for = db.Column(db.String(64), nullable=True)
 

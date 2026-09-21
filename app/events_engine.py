@@ -66,6 +66,10 @@ def _check_triggers(run, triggers):
     if "forbidden_tag" in triggers:
         if triggers["forbidden_tag"] in run.tags:
             return False
+    # Сезон: срабатывает только в указанных сезонах
+    if "season_in" in triggers:
+        if run.season not in triggers["season_in"]:
+            return False
 
     return True
 
