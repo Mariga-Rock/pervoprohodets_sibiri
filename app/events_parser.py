@@ -19,7 +19,7 @@ _ITEM_NAMES = {
 }
 
 
-# Флаги, которые можно устанавливать через JSON set_flags.
+# Разрешённые флаги и их типы для set_flags.
 _FLAG_TYPES = {
     "isker_status": str,
     "siege_days_left": int,
@@ -37,9 +37,18 @@ _FLAG_TYPES = {
     "days_without_vit": int,
     "season": int,
     "season_day": int,
+    "cannibal_day": int,
+    "ermak_has_armor": bool,
+    "ermak_wearing_armor": bool,
+    "armor_warning_given": bool,
+    "ate_polar_liver_day": int,
+    "hypervitaminosis_active": bool,
 }
 
 
+# ============================================================
+# ЦИНГА
+# ============================================================
 def _progress_scurvy(run):
     """Прогрессия цинги. Один боец заболевает."""
     healthy = [t for t in run.travelers
@@ -51,16 +60,9 @@ def _progress_scurvy(run):
     return t.name
 
 
-def _cure_all_scurvy(run):
-    """Лечит всех больных цингой. Сбрасывает scurvy_active."""
-    for t in run.travelers:
-        if t.alive and t.scurvy:
-            t.scurvy = False
-            t.scurvy_refused = False
-            t.scurvy_healer_seen = False
-    run.scurvy_active = False
-
-
+# ============================================================
+# РАНЕНИЯ
+# ============================================================
 def _has_doctor(run):
     return any(t.is_doctor and t.alive and not t.wounded
                and not t.is_caretaker for t in run.travelers)
@@ -73,40 +75,52 @@ def _pick_caretaker(run, exclude_name):
     return random.choice(candidates) if candidates else None
 
 
+def _wound_traveler(run, level=1, name=None, arrow=False):
+    """
+    Наносит ранение бойцу.
+    level 1 — гематома, 2 — рваная, 3 — тяжёлая.
+    arrow=True — в ране застряла стрела.
+    """
+    # Панцирь Ермака снижает уровень ранения на 1
+    if name and run.ermak_wearing_armor and "Ермак" in name:
+        level = max(1, level - 1)
+
+    candidates = [t for t in run.travelers
+                  if t.alive and not t.wounded]
+    if not candidates:
+        return None
+
+    if name:
+        t = next((x for x in candidates if x.name == name), None)
+        if not t:
+            t = random.choice(candidates)
+    else:
+        t = random.choice(candidates)
+
+    t.wound_level = min(3, (t.wound_level or 0) + level)
+
+    if t.wound_level >= 3:
+        t.wound_days_left = 3
+    elif t.wound_level == 2:
+        t.wound_days_left = 3
+    else:
+        t.wound_days_left = 2
+
+    if arrow:
+        t.arrow_stuck = True
+        t.arrow_days_left = 3
+
+    return t.name
+
+
 def _wound_random_traveler(run):
-    """Снимает выносливость. При 0 — ранение с сиделкой."""
-    healthy = [t for t in run.travelers
-               if t.alive and not t.wounded and not t.is_caretaker]
-    if healthy:
-        t = random.choice(healthy)
-        t.endurance -= 1
-        if t.endurance <= 0:
-            t.wounded = True
-            days = 3 if _has_doctor(run) else 5
-            caretaker = _pick_caretaker(run, t.name)
-            if caretaker:
-                caretaker.is_caretaker = True
-                caretaker.caring_for = t.name
-                t.wounded_days_left = days
-            else:
-                t.wounded_days_left = days * 2
-            return ("wound", t.name)
-        return (None, t.name)
-    wounded = [t for t in run.travelers if t.alive and t.wounded]
-    if wounded:
-        t = random.choice(wounded)
-        if random.random() < 0.9:
-            t.alive = False
-            for c in run.travelers:
-                if c.is_caretaker and c.caring_for == t.name:
-                    c.is_caretaker = False
-                    c.caring_for = None
-            return ("death", t.name)
-        t.endurance = 1
-        return (None, t.name)
-    return None
+    """Обратная совместимость: ранит случайного бойца уровнем 1."""
+    return _wound_traveler(run, level=1)
 
 
+# ============================================================
+# СЛЕПОК
+# ============================================================
 def _snapshot_run(run):
     return {
         "vit_c": run.vit_c, "morale": run.morale,
@@ -124,6 +138,9 @@ def _snapshot_run(run):
     }
 
 
+# ============================================================
+# ПОСЛЕДСТВИЯ
+# ============================================================
 def _build_consequences(snap_before, run, choice_data):
     deltas = []
     stat_names = {
@@ -189,15 +206,25 @@ def _build_consequences(snap_before, run, choice_data):
     return {"narrative": narrative, "deltas": deltas}
 
 
+# ============================================================
+# ЭФФЕКТЫ
+# ============================================================
 def _apply_stats(run, stats_diff):
     if not stats_diff:
         return
+
+    # Спецфлаги — вытаскиваем из словаря
     cure_flag = stats_diff.pop("cure_scurvy", 0)
     add_vit = stats_diff.pop("add_vitamin", 0)
+    wound_level = stats_diff.pop("wound", 0)
+    wound_target = stats_diff.pop("wound_target", None)
+    wound_arrow = stats_diff.pop("wound_arrow", False)
+    clear_arrow = stats_diff.pop("clear_arrow", 0)
+    heal_wound = stats_diff.pop("heal_wound", 0)
+    amputate = stats_diff.pop("amputate", 0)
 
+    # Статы
     if "vit_c" in stats_diff:
-        # ВАЖНО: если vit_c положительный — это источник витамина.
-        # Сбрасываем days_without_vit через season.add_vitamin.
         delta = stats_diff["vit_c"]
         if delta > 0:
             from app.season import add_vitamin
@@ -210,6 +237,8 @@ def _apply_stats(run, stats_diff):
         run.warmth = max(0, min(run.warmth + stats_diff["warmth"], MAX_WARMTH))
     if "discipline" in stats_diff:
         run.discipline = max(0, min(run.discipline + stats_diff["discipline"], 100))
+
+    # Продукты
     if "flour" in stats_diff:
         run.flour = max(0, run.flour + stats_diff["flour"])
     if "fish" in stats_diff:
@@ -218,23 +247,79 @@ def _apply_stats(run, stats_diff):
         run.meat = max(0, run.meat + stats_diff["meat"])
     if "cranberries" in stats_diff:
         run.cranberries = max(0, run.cranberries + stats_diff["cranberries"])
+
+    # Деньги и грамоты
     if "money" in stats_diff:
         run.money = max(0, run.money + stats_diff["money"])
     if "charters" in stats_diff:
         run.charters = max(0, run.charters + stats_diff["charters"])
+
+    # Выносливость
     if "endurance" in stats_diff and stats_diff["endurance"] < 0:
         for _ in range(abs(stats_diff["endurance"])):
-            _wound_random_traveler(run)
+            _wound_traveler(run, level=1)
 
-    # Явный флаг "добавить витамин" — использовать сезонную логику
+    # Ранение заданного уровня
+    if wound_level:
+        _wound_traveler(run, level=wound_level, name=wound_target,
+                        arrow=bool(wound_arrow))
+
+    # Извлечь стрелу
+    if clear_arrow:
+        for t in run.travelers:
+            if t.arrow_stuck:
+                t.arrow_stuck = False
+                t.arrow_days_left = 0
+                break
+
+    # Подлечить рану
+    if heal_wound:
+        target = next((t for t in run.travelers
+                       if t.alive and t.wound_level > 0), None)
+        if target:
+            target.wound_level = max(0, target.wound_level - heal_wound)
+            if target.wound_level == 0:
+                target.wound_days_left = 0
+                target.infection = False
+
+    # Ампутация
+    if amputate:
+        target = next((t for t in run.travelers
+                       if t.alive and t.gangrene), None)
+        if target:
+            target.gangrene = False
+            target.wound_level = 0
+            target.wound_days_left = 0
+            target.infection = False
+            target.endurance = max(1, target.endurance_max // 2)
+            target.scar = True
+            tag = f"disabled_{target.name}"
+            if tag not in run.tags:
+                run.tags.append(tag)
+
+    # Свинцовое отравление
+    if "lead_poisoning" in stats_diff:
+        days = int(stats_diff["lead_poisoning"])
+        candidates = [t for t in run.travelers if t.alive]
+        if candidates:
+            t = random.choice(candidates)
+            t.lead_poisoning_days = (t.lead_poisoning_days or 0) + days
+
+    # Витамин
     if add_vit:
         from app.season import add_vitamin
         add_vitamin(run, add_vit)
 
-    # cure_scurvy: лечит N больных и сбрасывает scurvy_active
+    # Лечение цинги
     if cure_flag:
         if cure_flag >= 99:
-            _cure_all_scurvy(run)
+            for t in run.travelers:
+                if t.alive and t.scurvy:
+                    t.scurvy = False
+                    t.scurvy_refused = False
+                    t.scurvy_healer_seen = False
+            run.scurvy_active = False
+            run.days_without_vit = 0
         else:
             sick = [t for t in run.travelers if t.alive and t.scurvy]
             for t in sick[:cure_flag]:
@@ -249,6 +334,27 @@ def _apply_stats(run, stats_diff):
 def _apply_flags(run, flags):
     if not flags:
         return
+
+    # Особые флаги, не маппятся напрямую
+    if flags.get("soften_cannibals"):
+        if "cannibals" in run.tags:
+            run.tags.remove("cannibals")
+        if "cannibal_admitted" not in run.tags:
+            run.tags.append("cannibal_admitted")
+
+    if flags.get("execute_cannibal_leader"):
+        if run.cannibal_leader_name:
+            victim = next(
+                (t for t in run.travelers
+                 if t.alive and t.name == run.cannibal_leader_name),
+                None,
+            )
+            if victim:
+                victim.alive = False
+        if "cannibals" in run.tags:
+            run.tags.remove("cannibals")
+
+    # Обычные флаги
     for key, value in flags.items():
         expected = _FLAG_TYPES.get(key)
         if expected is None:
@@ -264,12 +370,39 @@ def _apply_flags(run, flags):
             continue
 
 
+def _apply_strings(run, strings):
+    """Устанавливает строковые поля по имени."""
+    if not strings:
+        return
+    allowed = {"cannibal_leader_name"}
+    for key, value in strings.items():
+        if key not in allowed:
+            continue
+        try:
+            setattr(run, key, str(value)[:64])
+        except (TypeError, ValueError):
+            continue
+
+
 def _apply_tags(run, tags_to_add):
     if not tags_to_add:
         return
     for tag in tags_to_add:
         if tag not in run.tags:
             run.tags.append(tag)
+
+    # Особый случай: каннибализм
+    if "cannibals" in tags_to_add and not run.cannibal_day:
+        run.cannibal_day = run.day
+        candidates = [t for t in run.travelers
+                      if t.alive and not t.is_ataman and not t.wounded]
+        if candidates:
+            weakest = min(candidates, key=lambda x: x.endurance)
+            run.cannibal_leader_name = weakest.name
+
+    # Особый случай: печень медведя
+    if "ate_polar_liver" in tags_to_add and not run.ate_polar_liver_day:
+        run.ate_polar_liver_day = run.day
 
 
 def _apply_inventory(run, items_add, items_remove):
@@ -284,33 +417,51 @@ def _apply_inventory(run, items_add, items_remove):
             run.inventory[item] = run.inventory.get(item, 0) + qty
 
 
+# ============================================================
+# УСЛОВИЯ
+# ============================================================
 def _check_conditions(run, conditions):
     if not conditions:
         return True, None
+
     required = conditions.get("items_required") or {}
     for item, qty in required.items():
         if run.inventory.get(item, 0) < qty:
             return False, f"Не хватает: {item} × {qty}"
+
     for tag in conditions.get("tags_required") or []:
         if tag not in run.tags:
             return False, f"Нужно условие: {tag}"
+
+    # Запрет выбора при наличии тега
+    for tag in conditions.get("tags_forbidden") or []:
+        if tag in run.tags:
+            return False, "Выбор недоступен."
+
     for stat, min_val in (conditions.get("stats_min") or {}).items():
         if getattr(run, stat, 0) < min_val:
             return False, f"Слишком низкий {stat}"
+
     for stat, max_val in (conditions.get("stats_max") or {}).items():
         if getattr(run, stat, 0) > max_val:
             return False, f"Слишком высокий {stat}"
-    # Сезонные условия
+
+    # Сезон
     if "season_in" in conditions:
         if run.season not in conditions["season_in"]:
             return False, "Не тот сезон"
+
     return True, None
 
 
+# ============================================================
+# ГЛАВНАЯ ФУНКЦИЯ
+# ============================================================
 def process_event_choice(run, event_id, choice_id):
     if run.current_event_id != event_id:
         return {"status": "error",
-                "message": f"Рассинхронизация: '{run.current_event_id}' vs '{event_id}'"}
+                "message": f"Рассинхронизация: "
+                           f"'{run.current_event_id}' vs '{event_id}'"}
     event_data = get_event(event_id)
     if not event_data:
         return {"status": "error", "message": f"Ивент '{event_id}' не найден"}
@@ -329,6 +480,7 @@ def process_event_choice(run, event_id, choice_id):
 
     _apply_stats(run, dict(effects.get("stats") or {}))
     _apply_flags(run, effects.get("set_flags") or {})
+    _apply_strings(run, effects.get("set_strings") or {})
     _apply_tags(run, effects.get("tags_add") or [])
     _apply_inventory(run, effects.get("items_add") or {},
                      effects.get("items_remove") or [])

@@ -8,11 +8,14 @@
 
 По умолчанию создаёт:
     telegram_id      = 123123123
-    vit_c            = 100
-    current_event_id = None
+    год              = 1
+    сезон            = осень (2)
+    день сезона      = 1
     отряд            = STARTING_TRAVELERS (7 бойцов)
+    инвентарь        = DEFAULT_INVENTORY
+    current_event_id = None
 
-Если игрок уже есть — удаляет его и создаёт заново.
+Если игрок уже есть — удаляет и создаёт заново.
 """
 
 import argparse
@@ -59,23 +62,62 @@ def seed(tg_id: int, create_run: bool = True):
 
         run = Run(
             user_id=user.id,
+            # Время
             day=DEFAULT_DAY,
+            year=1,
+            season=2,           # старт осенью
+            season_day=1,
+            # Путь
             distance_covered=DEFAULT_DISTANCE,
+            # Провизия
             flour=DEFAULT_FLOUR,
             fish=DEFAULT_FISH,
             meat=DEFAULT_MEAT,
             cranberries=DEFAULT_CRANBERRIES,
+            # Статы
             vit_c=DEFAULT_VIT_C,
             morale=DEFAULT_MORALE,
             warmth=DEFAULT_WARMTH,
+            discipline=70,
+            # Экономика
+            money=0,
+            charters=0,
+            total_fur_sent=0,
+            cities_count=0,
+            # Сюжет
+            isker_status="none",
+            siege_days_left=0,
+            siege_result="none",
+            ivan_koltso_alive=True,
+            ermak_alive=True,
+            leader="ermak",
+            mangazeya_rumors=0,
+            yasak_count=0,
+            volhovsky_arrived=False,
+            volhovsky_alive=False,
+            volhovsky_healed=False,
+            # Каннибализм
+            cannibal_day=0,
+            cannibal_leader_name=None,
+            # Панцирь
+            ermak_has_armor=False,
+            ermak_wearing_armor=False,
+            armor_warning_given=False,
+            # Печень
+            ate_polar_liver_day=0,
+            hypervitaminosis_active=False,
+            hypervitaminosis_days=0,
+            # Инвентарь и теги
             inventory=dict(DEFAULT_INVENTORY),
             tags=[],
             recent_events=[],
+            milestones_shown=[],
             current_event_id=None,
         )
         db.session.add(run)
         db.session.flush()
 
+        # Стартовый отряд
         for tpl in STARTING_TRAVELERS:
             t = Traveler(
                 run_id=run.id,
@@ -87,10 +129,23 @@ def seed(tg_id: int, create_run: bool = True):
                 is_scientist=tpl["is_scientist"],
                 is_ataman=tpl["is_ataman"],
                 is_priest=tpl.get("is_priest", False),
-                alive=True,
-                wounded=False,
+                # Медицина
+                wound_level=0,
+                wound_days_left=0,
+                infection=False,
+                gangrene=False,
+                scar=False,
+                lead_poisoning_days=0,
+                arrow_stuck=False,
+                arrow_days_left=0,
+                # Сиделки
                 is_caretaker=False,
+                caring_for=None,
+                # Цинга
                 scurvy=False,
+                scurvy_refused=False,
+                scurvy_healer_seen=False,
+                alive=True,
             )
             db.session.add(t)
 
@@ -99,14 +154,18 @@ def seed(tg_id: int, create_run: bool = True):
         print(f"[OK] Тестовый игрок создан")
         print(f"     telegram_id      = {user.telegram_id}")
         print(f"     run.id           = {run.id}")
-        print(f"     day              = {run.day}")
+        print(f"     год              = {run.year}")
+        print(f"     сезон            = {run.season} (осень)")
+        print(f"     день             = {run.day}")
         print(f"     flour            = {run.flour}")
         print(f"     fish             = {run.fish}")
         print(f"     meat             = {run.meat}")
+        print(f"     cranberries      = {run.cranberries}")
         print(f"     vit_c            = {run.vit_c}")
         print(f"     morale           = {run.morale}")
         print(f"     money            = {run.money}")
         print(f"     charters         = {run.charters}")
+        print(f"     inventory        = {run.inventory}")
         print(f"     current_event_id = {run.current_event_id}")
         print(f"     отряд            = {len(STARTING_TRAVELERS)} бойцов:")
         for t in run.travelers:
@@ -119,7 +178,8 @@ def seed(tg_id: int, create_run: bool = True):
                 role = " (лекарь)"
             print(
                 f"       - {t.name}{role}: "
-                f"hunting={t.hunting}, endurance={t.endurance}/{t.endurance_max}"
+                f"hunting={t.hunting}, "
+                f"endurance={t.endurance}/{t.endurance_max}"
             )
 
 

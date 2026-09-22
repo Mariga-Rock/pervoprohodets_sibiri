@@ -79,6 +79,25 @@ class Run(db.Model):
     last_advisor_day = db.Column(db.Integer, default=0)
     milestones_shown = db.Column(db.JSON, default=list)
 
+    # ---- КАННИБАЛИЗМ ----
+    cannibal_day = db.Column(db.Integer, default=0)
+    cannibal_leader_name = db.Column(db.String(64), nullable=True)
+
+    # ---- ПАНЦИРЬ ЕРМАКА ----
+    ermak_has_armor = db.Column(db.Boolean, default=False)
+    ermak_wearing_armor = db.Column(db.Boolean, default=False)
+    armor_warning_given = db.Column(db.Boolean, default=False)
+
+    # ---- ПЕЧЕНЬ БЕЛОГО МЕДВЕДЯ ----
+    ate_polar_liver_day = db.Column(db.Integer, default=0)
+    hypervitaminosis_active = db.Column(db.Boolean, default=False)
+    hypervitaminosis_days = db.Column(db.Integer, default=0)
+
+    # ---- ПРАЗДНИКИ ----
+    # Список годов, когда праздновали. Один раз в год.
+    christmas_years = db.Column(db.JSON, default=list)
+    easter_years = db.Column(db.JSON, default=list)
+
     # ---- ИНВЕНТАРЬ И ТЕГИ ----
     inventory = db.Column(db.JSON, default=dict)
     tags = db.Column(db.JSON, default=list)
@@ -135,17 +154,38 @@ class Traveler(db.Model):
     is_ataman = db.Column(db.Boolean, default=False)
     is_priest = db.Column(db.Boolean, default=False)
 
-    wounded = db.Column(db.Boolean, default=False)
-    wounded_days_left = db.Column(db.Integer, default=0)
+    # ---- РАНЕНИЯ (медицинская система) ----
+    # wound_level: 0 = здоров, 1 = гематома, 2 = рваная, 3 = тяжёлая
+    wound_level = db.Column(db.Integer, default=0)
+    wound_days_left = db.Column(db.Integer, default=0)
+    # Осложнения
+    infection = db.Column(db.Boolean, default=False)
+    gangrene = db.Column(db.Boolean, default=False)
+    # Старый шрам от тяжёлого ранения — расходится при цинге
+    scar = db.Column(db.Boolean, default=False)
+    # Свинцовое отравление (дней осталось)
+    lead_poisoning_days = db.Column(db.Integer, default=0)
+    # Стрела в теле (не извлечена)
+    arrow_stuck = db.Column(db.Boolean, default=False)
+    arrow_days_left = db.Column(db.Integer, default=0)
 
+    # ---- СИДЕЛКИ ----
     is_caretaker = db.Column(db.Boolean, default=False)
     caring_for = db.Column(db.String(64), nullable=True)
 
+    # ---- ЦИНГА ----
     scurvy = db.Column(db.Boolean, default=False)
     scurvy_refused = db.Column(db.Boolean, default=False)
     scurvy_healer_seen = db.Column(db.Boolean, default=False)
 
     alive = db.Column(db.Boolean, default=True)
+
+    # ---- СВОЙСТВА ----
+
+    @property
+    def wounded(self):
+        """Не может идти — если рана тяжёлая или гангрена."""
+        return self.wound_level >= 3 or self.gangrene
 
     def __repr__(self):
         return f"<Traveler {self.name} end={self.endurance}>"
