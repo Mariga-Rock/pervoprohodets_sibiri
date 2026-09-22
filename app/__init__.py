@@ -1008,8 +1008,8 @@ def register_routes(app):
                 eid = None
             else:
                 run.current_event_id = eid
-        flag_modified(run, "tags")
-        hint = get_advisor_hint(run)
+                flag_modified(run, "tags")
+        hint = get_advisor_hint(run) or ""
 
         season_msg = ""
         if season_changed:
@@ -1018,7 +1018,9 @@ def register_routes(app):
         db.session.commit()
 
         if eid:
-            return _build_story_event_response(run, eid, ach, hint + season_msg)
+            return _build_story_event_response(
+                run, eid, ach, (hint + season_msg).strip()
+            )
 
         food_spent = run.squad_size * DAILY_FOOD_PER_PERSON
         if winter_stop:
